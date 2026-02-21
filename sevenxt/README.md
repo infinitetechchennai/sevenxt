@@ -1,3 +1,1 @@
-# Flutter E-Commerce App Template
-
-
+# Flutter Sevenxt App 
