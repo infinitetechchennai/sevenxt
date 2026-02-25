@@ -453,6 +453,20 @@ class OrdersRepository {
       return false;
     }
   }
+   // Cancel order
+  static Future<bool> cancelOrder(String orderId) async {
+    try {
+      final response = await ApiService.cancelOrder(orderId);
+      if (response['success'] == true) {
+        print('Order $orderId cancelled successfully');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Error cancelling order: $e');
+      return false;
+    }
+  }
 
   // Force refresh from backend (ignores local cache)!
   static Future<List<Order>> refreshOrders() async {
