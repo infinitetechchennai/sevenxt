@@ -1756,12 +1756,12 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
 
         # 5. Decrement Stock for each product
         for product in order_data.products:
-        if product.product_id:
-        cursor.execute("""
-            UPDATE products 
-            SET stock = GREATEST(0, stock - %s) 
-            WHERE id = %s
-        """, (product.quantity, product.product_id))
+            if product.product_id:
+                cursor.execute("""
+                    UPDATE products 
+                    SET stock = GREATEST(0, stock - %s) 
+                    WHERE id = %s
+                """, (product.quantity, product.product_id))
 
 
         # 6. Commit transaction
