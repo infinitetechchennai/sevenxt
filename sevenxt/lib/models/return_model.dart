@@ -89,8 +89,7 @@ enum ReturnStatus {
   pending,
   approved,
   rejected,
-  refunded,
-}
+  }
 
 extension ReturnStatusExtension on ReturnStatus {
   static ReturnStatus fromString(String value) {
@@ -107,8 +106,6 @@ extension ReturnStatusExtension on ReturnStatus {
         return Colors.green;
       case ReturnStatus.rejected:
         return Colors.red;
-      case ReturnStatus.refunded:
-        return Colors.blue;
       default:
         return Colors.orange;
     }
