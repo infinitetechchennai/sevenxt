@@ -6,7 +6,7 @@ class OrderedProduct {
   final String name;
   final String imageUrl;
   final int quantity;
-  final String? productId; // 🔥 ADD THIS
+   final String? productId; // 🔥 ADD THIS
   final String colorHex;
   final String hsnCode;
   final double? price;
