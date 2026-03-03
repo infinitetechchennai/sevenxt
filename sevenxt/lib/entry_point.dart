@@ -13,6 +13,7 @@ import 'package:sevenxt/screens/checkout/views/cart_screen.dart';
 import 'package:sevenxt/screens/discover/views/discover_screen.dart';
 import 'package:sevenxt/screens/home/views/home_screen.dart';
 import 'package:sevenxt/screens/profile/views/profile_screen.dart';
+import 'package:sevenxt/utils/responsive.dart';
 
 import '/screens/helpers/user_helper.dart';
 
@@ -103,12 +104,107 @@ class _EntryPointState extends State<EntryPoint> {
     );
   }
 
+  /// Navigation items data
+  static const _navItems = [
+    ('Home', 'assets/icons/Shop.svg'),
+    ('Discover', 'assets/icons/Category.svg'),
+    ('Cart', 'assets/icons/cart.svg'),
+    ('Profile', 'assets/icons/Profile.svg'),
+  ];
+
+  Widget _buildSidebar(int selectedIndex, Function(int) onTap, bool isGuest) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: 240,
+      color: isDark ? const Color(0xFF1C1C25) : Colors.white,
+      child: Column(
+        children: [
+          // Logo
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: SvgPicture.asset(
+              "assets/logo/sevenxt.svg",
+              height: 60,
+              width: 80,
+            ),
+          ),
+          const Divider(height: 1),
+          // Navigation Items
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: _navItems.length,
+              itemBuilder: (context, index) {
+                final isSelected = selectedIndex == index;
+                final isDisabled =
+                    isGuest && (index == 1 || index == 2 || index == 3);
+                return _SidebarItem(
+                  icon: _navItems[index].$2,
+                  label: _navItems[index].$1,
+                  isSelected: isSelected,
+                  isDisabled: isDisabled,
+                  onTap: () {
+                    if (!isDisabled) {
+                      onTap(index);
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      leading: const SizedBox(),
+      leadingWidth: 0,
+      centerTitle: false,
+      title: SvgPicture.asset(
+        "assets/logo/sevenxt.svg",
+        height: 85,
+        width: 120,
+      ),
+      actions: [
+        IconButton(
+          onPressed: () {
+            Navigator.pushNamed(context, searchScreenRoute);
+          },
+          icon: SvgPicture.asset(
+            "assets/icons/Search.svg",
+            height: 24,
+            colorFilter: ColorFilter.mode(
+              Theme.of(context).textTheme.bodyLarge!.color!,
+              BlendMode.srcIn,
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: () {
+            Navigator.pushNamed(context, notificationScreenRoute);
+          },
+          icon: SvgPicture.asset(
+            "assets/icons/notification.svg",
+            height: 24,
+            colorFilter: ColorFilter.mode(
+              Theme.of(context).textTheme.bodyLarge!.color!,
+              BlendMode.srcIn,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<GuestService>(
       builder: (context, guestService, child) {
         final bool isGuest = guestService.isGuest;
-        const int cartIndex = 2;
+        final bool isDesktop = Responsive.isDesktop(context);
 
         return PopScope(
           canPop: _currentIndex == 0,
@@ -119,115 +215,183 @@ class _EntryPointState extends State<EntryPoint> {
             });
           },
           child: Scaffold(
-            appBar: AppBar(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              leading: const SizedBox(),
-              leadingWidth: 0,
-              centerTitle: false,
-              title: SvgPicture.asset(
-                "assets/logo/sevenxt.svg",
-                height: 85,
-                width: 120,
-              ),
-              actions: [
-                IconButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, searchScreenRoute);
-                  },
-                  icon: SvgPicture.asset(
-                    "assets/icons/Search.svg",
-                    height: 24,
-                    colorFilter: ColorFilter.mode(
-                      Theme.of(context).textTheme.bodyLarge!.color!,
-                      BlendMode.srcIn,
-                    ),
+            appBar: isDesktop ? null : _buildAppBar(),
+            body: Row(
+              children: [
+                // Desktop: Sidebar navigation
+                if (isDesktop)
+                  _buildSidebar(_currentIndex, (index) {
+                    if (isGuest && (index == 1 || index == 2 || index == 3)) {
+                      Navigator.pushNamed(context, logInScreenRoute);
+                    } else if (index != _currentIndex) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                      Hive.box('user_settings').put('last_tab_index', index);
+                    }
+                  }, isGuest),
+
+                // Main content
+                Expanded(
+                  child: Column(
+                    children: [
+                      // Desktop: Top bar
+                      if (isDesktop) _buildAppBar(),
+                      // Page content
+                      Expanded(
+                        child: PageTransitionSwitcher(
+                          duration: defaultDuration,
+                          transitionBuilder:
+                              (child, animation, secondAnimation) {
+                            return FadeThroughTransition(
+                              animation: animation,
+                              secondaryAnimation: secondAnimation,
+                              child: child,
+                            );
+                          },
+                          child: _pages[_currentIndex],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                IconButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, notificationScreenRoute);
-                    },
-                    icon: SvgPicture.asset(
-                      "assets/icons/notification.svg",
-                      height: 24,
-                      colorFilter: ColorFilter.mode(
-                        Theme.of(context).textTheme.bodyLarge!.color!,
-                        BlendMode.srcIn,
-                      ),
-                    ))
               ],
             ),
-            body: PageTransitionSwitcher(
-              duration: defaultDuration,
-              transitionBuilder: (child, animation, secondAnimation) {
-                return FadeThroughTransition(
-                  animation: animation,
-                  secondaryAnimation: secondAnimation,
-                  child: child,
-                );
-              },
-              child: _pages[_currentIndex],
-            ),
-            bottomNavigationBar: Container(
-              padding: const EdgeInsets.only(top: defaultPadding / 2),
-              color: Theme.of(context).brightness == Brightness.light
-                  ? Colors.white
-                  : const Color(0xFF101015),
-              child: BottomNavigationBar(
-                currentIndex: _currentIndex,
-                onTap: (index) {
-                  if (isGuest && (index == 1 || index == 2 || index == 3)) {
-                    Navigator.pushNamed(context, logInScreenRoute);
-                  } else if (index != _currentIndex) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
-                    Hive.box('user_settings')
-                        .put('last_tab_index', _currentIndex);
-                  }
-                },
-                backgroundColor:
-                    Theme.of(context).brightness == Brightness.light
+            // Mobile: Bottom navigation
+            bottomNavigationBar: isDesktop
+                ? null
+                : Container(
+                    padding: const EdgeInsets.only(top: defaultPadding / 2),
+                    color: Theme.of(context).brightness == Brightness.light
                         ? Colors.white
                         : const Color(0xFF101015),
-                type: BottomNavigationBarType.fixed,
-                selectedFontSize: 12,
-                selectedItemColor: kPrimaryColor,
-                unselectedItemColor: Colors.transparent,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: svgIcon("assets/icons/Shop.svg"),
-                    activeIcon:
-                        svgIcon("assets/icons/Shop.svg", color: kPrimaryColor),
-                    label: "Shop",
+                    child: BottomNavigationBar(
+                      currentIndex: _currentIndex,
+                      onTap: (index) {
+                        if (isGuest &&
+                            (index == 1 || index == 2 || index == 3)) {
+                          Navigator.pushNamed(context, logInScreenRoute);
+                        } else if (index != _currentIndex) {
+                          setState(() {
+                            _currentIndex = index;
+                          });
+                          Hive.box('user_settings')
+                              .put('last_tab_index', _currentIndex);
+                        }
+                      },
+                      backgroundColor:
+                          Theme.of(context).brightness == Brightness.light
+                              ? Colors.white
+                              : const Color(0xFF101015),
+                      type: BottomNavigationBarType.fixed,
+                      selectedFontSize: 12,
+                      selectedItemColor: kPrimaryColor,
+                      unselectedItemColor: Colors.transparent,
+                      items: [
+                        BottomNavigationBarItem(
+                          icon: svgIcon("assets/icons/Shop.svg"),
+                          activeIcon: svgIcon("assets/icons/Shop.svg",
+                              color: kPrimaryColor),
+                          label: "Shop",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: svgIcon("assets/icons/Category.svg",
+                              color: isGuest ? Colors.grey : null),
+                          activeIcon: svgIcon("assets/icons/Category.svg",
+                              color: kPrimaryColor),
+                          label: "Discover",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: svgIcon("assets/icons/cart.svg",
+                              color: isGuest ? Colors.grey : null),
+                          activeIcon: svgIcon("assets/icons/cart.svg",
+                              color: isGuest ? Colors.grey : kPrimaryColor),
+                          label: "Cart",
+                        ),
+                        BottomNavigationBarItem(
+                          icon: svgIcon("assets/icons/Profile.svg",
+                              color: isGuest ? Colors.grey : null),
+                          activeIcon: svgIcon("assets/icons/Profile.svg",
+                              color: isGuest ? Colors.grey : kPrimaryColor),
+                          label: "Profile",
+                        ),
+                      ],
+                    ),
                   ),
-                  BottomNavigationBarItem(
-                    icon: svgIcon("assets/icons/Category.svg",
-                        color: isGuest ? Colors.grey : null),
-                    activeIcon: svgIcon("assets/icons/Category.svg",
-                        color: kPrimaryColor),
-                    label: "Discover",
-                  ),
-                  BottomNavigationBarItem(
-                    icon: svgIcon("assets/icons/cart.svg",
-                        color: isGuest ? Colors.grey : null),
-                    activeIcon: svgIcon("assets/icons/cart.svg",
-                        color: isGuest ? Colors.grey : kPrimaryColor),
-                    label: "Cart",
-                  ),
-                  BottomNavigationBarItem(
-                    icon: svgIcon("assets/icons/Profile.svg",
-                        color: isGuest ? Colors.grey : null),
-                    activeIcon: svgIcon("assets/icons/Profile.svg",
-                        color: isGuest ? Colors.grey : kPrimaryColor),
-                    label: "Profile",
-                  ),
-                ],
-              ),
-            ),
           ),
         );
       },
+    );
+  }
+}
+
+class _SidebarItem extends StatelessWidget {
+  final String icon;
+  final String label;
+  final bool isSelected;
+  final bool isDisabled;
+  final VoidCallback onTap;
+
+  const _SidebarItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.isDisabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Material(
+        color: isSelected ? kPrimaryColor.withOpacity(0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: isDisabled ? null : onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  icon,
+                  height: 22,
+                  width: 22,
+                  colorFilter: ColorFilter.mode(
+                    isDisabled
+                        ? Colors.grey
+                        : isSelected
+                            ? kPrimaryColor
+                            : isDark
+                                ? Colors.white70
+                                : Colors.black87,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isDisabled
+                        ? Colors.grey
+                        : isSelected
+                            ? kPrimaryColor
+                            : isDark
+                                ? Colors.white
+                                : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

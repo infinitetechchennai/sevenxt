@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants.dart';
+import '../../utils/responsive.dart';
 import '../network_image_with_loader.dart';
 
 class SecondaryProductCard extends StatelessWidget {
@@ -28,9 +29,16 @@ class SecondaryProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+    final isTablet = Responsive.isTablet(context);
+
+    // Responsive dimensions
+    final cardWidth = isDesktop ? 300.0 : (isTablet ? 280.0 : 256.0);
+    final imageWidth = isDesktop ? 100.0 : (isTablet ? 90.0 : 80.0);
+    final minHeight = isDesktop ? 140.0 : (isTablet ? 130.0 : 114.0);
+
     return Container(
-      width: 256,
-      constraints: const BoxConstraints(minHeight: 114),
+      constraints: BoxConstraints(minHeight: minHeight),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(defaultBorderRadious),
@@ -47,13 +55,13 @@ class SecondaryProductCard extends StatelessWidget {
         onTap: press,
         borderRadius: BorderRadius.circular(defaultBorderRadious),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: EdgeInsets.all(isDesktop ? 12.0 : 8.0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               /// IMAGE
               SizedBox(
-                width: 80,
+                width: imageWidth,
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: Stack(
@@ -67,17 +75,18 @@ class SecondaryProductCard extends StatelessWidget {
                           right: 4,
                           top: 4,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 2),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: isDesktop ? 6 : 4,
+                                vertical: isDesktop ? 4 : 2),
                             decoration: BoxDecoration(
                               color: errorColor,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               "$dicountpercent% OFF",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 8,
+                                fontSize: isDesktop ? 10 : 8,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -87,7 +96,7 @@ class SecondaryProductCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: isDesktop ? 16 : 12),
 
               /// CONTENT
               Expanded(
@@ -104,35 +113,48 @@ class SecondaryProductCard extends StatelessWidget {
                         style: Theme.of(context)
                             .textTheme
                             .bodySmall!
-                            .copyWith(fontSize: 10, color: blackColor40),
+                            .copyWith(
+                              fontSize: isDesktop ? 12 : 10,
+                              color: blackColor40
+                            ),
                       ),
                       const SizedBox(height: 1),
                       Text(
                         title,
-                        maxLines: 1,
+                        maxLines: isDesktop ? 2 : 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                              fontSize: 11,
+                              fontSize: isDesktop ? 14 : 11,
                               fontWeight: FontWeight.w600,
                               height: 1.2,
                             ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: isDesktop ? 4 : 2),
                       if (rating != null)
                         Row(
                           children: [
-                            Icon(Icons.star, size: 10, color: warningColor),
+                            Icon(Icons.star, size: isDesktop ? 12 : 10, color: warningColor),
                             const SizedBox(width: 2),
                             Text(
                               rating!.toStringAsFixed(1),
-                              style: const TextStyle(
-                                  fontSize: 9, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  fontSize: isDesktop ? 11 : 9, fontWeight: FontWeight.bold),
                             ),
+                            if (isDesktop) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                'reviews',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: blackColor40,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
 
                       /// PRICE
-                      const SizedBox(height: 2),
+                      SizedBox(height: isDesktop ? 6 : 2),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
@@ -142,7 +164,7 @@ class SecondaryProductCard extends StatelessWidget {
                             Text(
                               "₹${price.toStringAsFixed(0)}",
                               style: TextStyle(
-                                fontSize: 9,
+                                fontSize: isDesktop ? 12 : 9,
                                 color: blackColor40,
                                 decoration: TextDecoration.lineThrough,
                                 overflow: TextOverflow.ellipsis,
@@ -151,7 +173,7 @@ class SecondaryProductCard extends StatelessWidget {
                           Text(
                             "₹${(priceAfetDiscount ?? price).toStringAsFixed(0)}",
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: isDesktop ? 16 : 12,
                               fontWeight: FontWeight.bold,
                               color: kPrimaryColor,
                               overflow: TextOverflow.ellipsis,

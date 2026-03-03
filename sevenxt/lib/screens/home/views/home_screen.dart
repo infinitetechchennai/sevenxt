@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sevenxt/constants.dart';
 import 'package:sevenxt/screens/home/views/components/category_section.dart';
+import 'package:sevenxt/utils/responsive.dart';
 
 import '../../../models/category_model.dart';
 import 'components/offer_carousel_and_categories.dart';
@@ -15,6 +16,8 @@ class HomeScreen extends StatelessWidget {
     final args = ModalRoute.of(context)?.settings.arguments;
     // Show carousel ONLY if no arguments are passed (i.e., navigating directly to home).
     final bool showCarouselAndCategories = args == null;
+    final isDesktop = Responsive.isDesktop(context);
+    final horizontalPadding = Responsive.horizontalPadding(context);
 
     return Scaffold(
       body: SafeArea(
@@ -26,7 +29,7 @@ class HomeScreen extends StatelessWidget {
             // Dynamic category sections - cannot be const
             ..._buildCategorySections(),
 
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Column(
                 children: [
                   // While loading use 👇
@@ -44,7 +47,7 @@ class HomeScreen extends StatelessWidget {
             // SliverToBoxAdapter(child: PopularProductsPeripherals()),
             // SliverToBoxAdapter(child: PopularProductsTVEntertainment()),
 
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Column(
                 children: [
                   SizedBox(height: defaultPadding * 1.5),

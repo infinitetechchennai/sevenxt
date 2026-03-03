@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants.dart';
+import '../../utils/responsive.dart';
 import '../network_image_with_loader.dart';
 
 class ProductCard extends StatelessWidget {
@@ -27,6 +28,19 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+    final isTablet = Responsive.isTablet(context);
+
+    // Responsive dimensions (OLD STYLE)
+    final padding = isDesktop ? 16.0 : (isTablet ? 14.0 : 12.0);
+    final brandFontSize = isDesktop ? 12.0 : (isTablet ? 11.0 : 10.0);
+    final titleFontSize = isDesktop ? 16.0 : (isTablet ? 14.0 : 13.0);
+    final titleMaxLines = isDesktop ? 3 : 2;
+    final ratingIconSize = isDesktop ? 16.0 : (isTablet ? 15.0 : 14.0);
+    final ratingFontSize = isDesktop ? 13.0 : (isTablet ? 12.0 : 11.0);
+    final priceFontSize = isDesktop ? 18.0 : (isTablet ? 16.0 : 15.0);
+    final originalPriceFontSize = isDesktop ? 13.0 : (isTablet ? 12.0 : 11.0);
+
     return InkWell(
       borderRadius: BorderRadius.circular(defaultBorderRadious),
       onTap: press,
@@ -36,7 +50,7 @@ class ProductCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: blackColor20, // FIX: Removed .withValues()
+              color: blackColor20,
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -45,18 +59,45 @@ class ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// IMAGE (takes remaining space)
+            /// IMAGE (Old Expanded behavior restored)
             Expanded(
-              child: NetworkImageWithLoader(
-                imageUrl: image,
-                radius: 0,
-                fit: BoxFit.contain, // Added to ensure entire image is visible
+              child: Stack(
+                children: [
+                  NetworkImageWithLoader(
+                    imageUrl: image,
+                    radius: 0,
+                    fit: BoxFit.contain,
+                  ),
+                  if (dicountpercent != null && dicountpercent! > 0)
+                    Positioned(
+                      left: 8,
+                      top: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isDesktop ? 8 : 6,
+                          vertical: isDesktop ? 5 : 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: errorColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          "$dicountpercent% OFF",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isDesktop ? 10 : 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
 
-            /// CONTENT (fixed height)
+            /// CONTENT (Old Layout)
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(padding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -67,43 +108,49 @@ class ProductCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: brandFontSize,
                         color: Colors.grey,
                       ),
                     ),
-                  const SizedBox(height: 4),
+
+                  SizedBox(height: isDesktop ? 6 : 4),
+
                   Text(
                     title,
-                    maxLines: 2,
+                    maxLines: titleMaxLines,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      fontSize: titleFontSize,
                     ),
                   ),
-                  // ⭐ Rating & Reviews (always visible)
+
+                  /// Rating & Reviews
                   Padding(
-                    padding: const EdgeInsets.only(top: 4, bottom: 6),
+                    padding: EdgeInsets.only(
+                      top: isDesktop ? 6 : 4,
+                      bottom: isDesktop ? 8 : 6,
+                    ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.star,
-                          size: 14,
+                          size: ratingIconSize,
                           color: rating > 0 ? Colors.amber : Colors.grey,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: TextStyle(
+                            fontSize: ratingFontSize,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           '($reviews)',
-                          style: const TextStyle(
-                            fontSize: 11,
+                          style: TextStyle(
+                            fontSize: ratingFontSize,
                             color: Colors.grey,
                           ),
                         ),
@@ -111,21 +158,25 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 8),
+                  SizedBox(height: isDesktop ? 10 : 8),
+
+                  /// Price
                   Text(
                     priceAfetDiscount != null && priceAfetDiscount! < price
                         ? '₹${priceAfetDiscount!.toStringAsFixed(0)}'
                         : '₹${price.toStringAsFixed(0)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 15,
+                      fontSize: priceFontSize,
                     ),
                   ),
+
+                  /// Original Price (if discounted)
                   if (priceAfetDiscount != null && priceAfetDiscount! < price)
                     Text(
                       '₹${price.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: originalPriceFontSize,
                         color: Colors.grey,
                         decoration: TextDecoration.lineThrough,
                       ),

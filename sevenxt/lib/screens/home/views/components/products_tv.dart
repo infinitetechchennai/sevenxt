@@ -4,6 +4,7 @@ import 'package:sevenxt/components/product/product_card.dart';
 import 'package:sevenxt/models/product_model.dart';
 import 'package:sevenxt/route/api_service.dart';
 import 'package:sevenxt/route/screen_export.dart';
+import 'package:sevenxt/utils/responsive.dart';
 
 import '/screens/helpers/user_helper.dart';
 import '../../../../components/skleton/product/products_skelton.dart';
@@ -47,12 +48,23 @@ class _PopularProductsTVEntertainmentState
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final isDesktop = Responsive.isDesktop(context);
+    final isTablet = Responsive.isTablet(context);
+
+    // Responsive dimensions
+    final cardWidth = isDesktop ? 260.0 : (isTablet ? 220.0 : 180.0);
+    final containerHeight = isDesktop ? 380.0 : (isTablet ? 340.0 : 280.0);
+    final padding = isDesktop ? 24.0 : defaultPadding;
+
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: defaultPadding / 2),
+      margin: EdgeInsets.symmetric(
+        vertical: isDesktop ? defaultPadding : defaultPadding / 2,
+      ),
       decoration: BoxDecoration(
         color: whiteColor,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        boxShadow: isDesktop ? [] : [
           BoxShadow(
             color: blackColor.withOpacity(0.1),
             spreadRadius: 1,
@@ -65,11 +77,11 @@ class _PopularProductsTVEntertainmentState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(
-              left: defaultPadding,
-              top: defaultPadding,
-              right: defaultPadding,
-              bottom: defaultPadding / 2,
+            padding: EdgeInsets.only(
+              left: padding,
+              top: padding,
+              right: padding,
+              bottom: padding / 2,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -77,22 +89,23 @@ class _PopularProductsTVEntertainmentState
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: EdgeInsets.all(isDesktop ? 10 : 6),
                       decoration: BoxDecoration(
                         color: Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.tv,
-                        size: 20,
+                        size: isDesktop ? 28 : 20,
                         color: Colors.orange,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: isDesktop ? 16 : 12),
                     Text(
                       _category,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
+                            fontSize: isDesktop ? 20 : 16,
                             color: Colors.orange.shade800,
                           ),
                     ),
@@ -100,20 +113,20 @@ class _PopularProductsTVEntertainmentState
                 ),
                 TextButton(
                   onPressed: _loadProducts,
-                  child: const Text(
+                  child: Text(
                     'View All',
                     style: TextStyle(
                       color: kPrimaryColor,
-                      fontSize: 14,
+                      fontSize: isDesktop ? 16 : 14,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: defaultPadding / 2),
+          SizedBox(height: isDesktop ? 16 : defaultPadding / 2),
           SizedBox(
-            height: 240,
+            height: containerHeight,
             child: FutureBuilder<List<ProductModel>>(
               future: _productsFuture,
               builder: (context, snapshot) {
@@ -129,7 +142,7 @@ class _PopularProductsTVEntertainmentState
                         Icon(
                           Icons.videocam_off,
                           color: errorColor,
-                          size: 50,
+                          size: isDesktop ? 64 : 50,
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -137,12 +150,16 @@ class _PopularProductsTVEntertainmentState
                           style: TextStyle(
                             color: errorColor,
                             fontWeight: FontWeight.w500,
+                            fontSize: isDesktop ? 18 : 16,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Failed to load entertainment products',
-                          style: TextStyle(color: blackColor40),
+                          style: TextStyle(
+                            color: blackColor40,
+                            fontSize: isDesktop ? 16 : 14,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         ElevatedButton(
@@ -156,10 +173,10 @@ class _PopularProductsTVEntertainmentState
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.refresh, size: 16),
-                              SizedBox(width: 8),
-                              Text('Retry'),
+                            children: [
+                              Icon(Icons.refresh, size: isDesktop ? 20 : 16),
+                              const SizedBox(width: 8),
+                              const Text('Retry'),
                             ],
                           ),
                         ),
@@ -175,7 +192,7 @@ class _PopularProductsTVEntertainmentState
                       children: [
                         Icon(
                           Icons.speaker,
-                          size: 60,
+                          size: isDesktop ? 72 : 60,
                           color: blackColor40,
                         ),
                         const SizedBox(height: 12),
@@ -183,14 +200,17 @@ class _PopularProductsTVEntertainmentState
                           'No Entertainment Products',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
-                            fontSize: 16,
+                            fontSize: isDesktop ? 18 : 16,
                             color: blackColor80,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Check back for home theatre systems',
-                          style: TextStyle(color: blackColor60),
+                          style: TextStyle(
+                            color: blackColor60,
+                            fontSize: isDesktop ? 16 : 14,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton(
@@ -203,10 +223,10 @@ class _PopularProductsTVEntertainmentState
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.refresh, size: 16),
-                              SizedBox(width: 8),
-                              Text('Refresh'),
+                            children: [
+                              Icon(Icons.refresh, size: isDesktop ? 20 : 16),
+                              const SizedBox(width: 8),
+                              const Text('Refresh'),
                             ],
                           ),
                         ),
@@ -217,20 +237,63 @@ class _PopularProductsTVEntertainmentState
 
                 final products = snapshot.data!;
 
+                // Desktop/Tablet: Grid layout
+                if (!isMobile) {
+                  final crossAxisCount = isDesktop ? 4 : 3;
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1400),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: padding),
+                        child: GridView.builder(
+                          scrollDirection: Axis.horizontal,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            childAspectRatio: 0.85,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemCount: products.length,
+                          itemBuilder: (context, index) => SizedBox(
+                            width: cardWidth,
+                            child: ProductCard(
+                              image: products[index].image,
+                              brandName: products[index].brandName,
+                              title: products[index].title,
+                              price: products[index].price.toDouble(),
+                              priceAfetDiscount:
+                                  products[index].priceAfetDiscount?.toDouble(),
+                              rating: products[index].rating,
+                              reviews: products[index].reviews,
+                              press: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  productDetailsScreenRoute,
+                                  arguments: products[index],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                // Mobile: Horizontal scroll
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: defaultPadding / 2,
                   ),
                   itemCount: products.length,
                   itemBuilder: (context, index) => Padding(
                     padding: EdgeInsets.only(
                       left: defaultPadding / 2,
-                      right:
-                          index == products.length - 1 ? defaultPadding / 2 : 0,
+                      right: index == products.length - 1 ? defaultPadding / 2 : 0,
                     ),
                     child: SizedBox(
-                      width: 180,
+                      width: cardWidth,
                       child: ProductCard(
                         image: products[index].image,
                         brandName: products[index].brandName,
@@ -254,7 +317,7 @@ class _PopularProductsTVEntertainmentState
               },
             ),
           ),
-          const SizedBox(height: defaultPadding),
+          SizedBox(height: padding),
         ],
       ),
     );

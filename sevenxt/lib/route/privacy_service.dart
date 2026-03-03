@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'api_service.dart';
 
 class PrivacyPolicyScreen extends StatefulWidget {
@@ -21,8 +22,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
 
   Future<void> _fetchContent() async {
     try {
-      final Map<String, String> pages =
-      await ApiService.getCmsPagesMap();
+      final Map<String, String> pages = await ApiService.getCmsPagesMap();
 
       setState(() {
         content = pages['Privacy Policy'] ?? 'Content not available';
@@ -54,33 +54,32 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                content,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Poppins',
-                  color: Colors.black,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      content,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Poppins',
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    GestureDetector(
+                      onTap: () => _launchEmail('sevenxt2023@gmail.com'),
+                      child: const Text(
+                        'sevenxt2023@gmail.com',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontFamily: 'Poppins',
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () =>
-                    _launchEmail('sevenxt2023@gmail.com'),
-                child: const Text(
-                  'sevenxt2023@gmail.com',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Poppins',
-                    color: Colors.blue,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

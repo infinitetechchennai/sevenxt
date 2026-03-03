@@ -14,12 +14,12 @@ class CartScreen extends StatefulWidget {
   final bool showBackButton;
   final bool isTab;
   final String? userType;
-
+  
   const CartScreen({
     super.key,
     this.showBackButton = true,
     this.isTab = false,
-    this.userType,
+    this.userType
   });
 
   @override
@@ -43,12 +43,12 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _initCartScreen() async {
     if (widget.userType != null) {
       _resolvedUserType = widget.userType!;
-      print('CartScreen: _resolvedUserType from widget: $_resolvedUserType');
+      print(
+          'CartScreen: _resolvedUserType from widget: $_resolvedUserType');
     } else {
       _resolvedUserType = await UserHelper.getUserType();
       print(
-        'CartScreen: _resolvedUserType from UserHelper: $_resolvedUserType',
-      );
+          'CartScreen: _resolvedUserType from UserHelper: $_resolvedUserType');
     }
 
     if (!mounted) return;
@@ -78,6 +78,7 @@ class _CartScreenState extends State<CartScreen> {
       print('Error fetching address: $e');
     }
   }
+
 
   double _getItemPrice(ProductModel product) {
     return (product.priceAfetDiscount != null &&
@@ -135,14 +136,11 @@ class _CartScreenState extends State<CartScreen> {
   bool _isCheckingStatus = false;
 
   Future<void> _proceedToCheckout() async {
-    if (_selectedAddress != null &&
-        _shippingFee <= 0 &&
-        !_isCalculatingShipping) {
+    if (_selectedAddress != null && _shippingFee <= 0 && !_isCalculatingShipping) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Delivery is not available for this pincode. Please try another address.',
-          ),
+              'Delivery is not available for this pincode. Please try another address.'),
           backgroundColor: errorColor,
         ),
       );
@@ -231,8 +229,7 @@ class _CartScreenState extends State<CartScreen> {
       },
     );
     print(
-      'CartScreen: Navigating to PaymentScreen with userType: $_resolvedUserType',
-    );
+        'CartScreen: Navigating to PaymentScreen with userType: $_resolvedUserType');
   }
 
   @override
@@ -278,9 +275,8 @@ class _CartScreenState extends State<CartScreen> {
                           final ProductModel product = cartItem.product;
                           final double itemPrice = _getItemPrice(product);
                           return Card(
-                            margin: const EdgeInsets.only(
-                              bottom: defaultPadding,
-                            ),
+                            margin:
+                                const EdgeInsets.only(bottom: defaultPadding),
                             child: Padding(
                               padding: const EdgeInsets.all(defaultPadding),
                               child: Row(
@@ -304,15 +300,14 @@ class _CartScreenState extends State<CartScreen> {
                                       children: [
                                         Text(
                                           product.title,
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.titleMedium,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         const SizedBox(
-                                          height: defaultPadding / 4,
-                                        ),
+                                            height: defaultPadding / 4),
                                         Text(
                                           '₹${itemPrice.toStringAsFixed(2)}',
                                           style: Theme.of(context)
@@ -321,24 +316,20 @@ class _CartScreenState extends State<CartScreen> {
                                               ?.copyWith(color: kPrimaryColor),
                                         ),
                                         const SizedBox(
-                                          height: defaultPadding / 4,
-                                        ),
+                                            height: defaultPadding / 4),
                                         Text('Qty: ${cartItem.quantity}'),
                                       ],
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(
-                                      Icons.delete_outline,
-                                      color: errorColor,
-                                    ),
+                                    icon: const Icon(Icons.delete_outline,
+                                        color: errorColor),
                                     onPressed: () {
                                       setState(
-                                        () => _cart.removeItem(cartItem),
-                                      );
+                                          () => _cart.removeItem(cartItem));
                                       _calculateShipping();
                                     },
-                                  ),
+                                  )
                                 ],
                               ),
                             ),
@@ -398,19 +389,14 @@ class _CartScreenState extends State<CartScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: isBold ? const TextStyle(fontWeight: FontWeight.bold) : null,
-          ),
-          Text(
-            '₹${value.toStringAsFixed(2)}',
-            style: isBold
-                ? const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: kPrimaryColor,
-                  )
-                : null,
-          ),
+          Text(label,
+              style:
+                  isBold ? const TextStyle(fontWeight: FontWeight.bold) : null),
+          Text('₹${value.toStringAsFixed(2)}',
+              style: isBold
+                  ? const TextStyle(
+                      fontWeight: FontWeight.bold, color: kPrimaryColor)
+                  : null),
         ],
       ),
     );
@@ -425,17 +411,13 @@ class _CartScreenState extends State<CartScreen> {
             ? const SizedBox(
                 height: 16,
                 width: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+                child: CircularProgressIndicator(strokeWidth: 2))
             : Text(
                 _selectedAddress == null
                     ? 'Calculated at checkout'
                     : '₹${_shippingFee.toStringAsFixed(2)}',
                 style: _selectedAddress == null
-                    ? const TextStyle(
-                        fontStyle: FontStyle.italic,
-                        color: greyColor,
-                      )
+                    ? const TextStyle(fontStyle: FontStyle.italic, color: greyColor)
                     : null,
               ),
       ],

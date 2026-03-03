@@ -4,12 +4,13 @@ import 'package:sevenxt/components/product/product_card.dart';
 import 'package:sevenxt/models/product_model.dart';
 import 'package:sevenxt/route/api_service.dart';
 import 'package:sevenxt/route/screen_export.dart';
+import 'package:sevenxt/utils/responsive.dart';
 
 import '/screens/helpers/user_helper.dart';
 import '../../../../components/skleton/product/products_skelton.dart'
     show ProductsSkelton;
 import '../../../../constants.dart';
-import '../../../../route/route_constants.dart'; // Import route_constants.dart for productDetailsScreenRoute
+import '../../../../route/route_constants.dart';
 
 class PopularProducts extends StatefulWidget {
   const PopularProducts({super.key});
@@ -36,7 +37,6 @@ class _PopularProductsState extends State<PopularProducts> {
     try {
       final userType = await UserHelper.getUserType();
       setState(() {
-        // Call the correct method to get products by category
         _productsFuture =
             _apiService.getProductsByCategory(_category, userType);
       });
@@ -49,33 +49,45 @@ class _PopularProductsState extends State<PopularProducts> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final isDesktop = Responsive.isDesktop(context);
+    final isTablet = Responsive.isTablet(context);
+
+    // Responsive dimensions
+    final cardWidth = isDesktop ? 260.0 : (isTablet ? 220.0 : 180.0);
+    final containerHeight = isDesktop ? 380.0 : (isTablet ? 320.0 : 240.0);
+    final padding = isDesktop ? 24.0 : defaultPadding;
+    final titleFontSize = isDesktop ? 22.0 : (isTablet ? 18.0 : 16.0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: defaultPadding / 2),
+        SizedBox(height: isDesktop ? defaultPadding : defaultPadding / 2),
         Padding(
-          padding: const EdgeInsets.all(defaultPadding),
+          padding: EdgeInsets.all(padding),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "$_category", // Display the category name
-                style: Theme.of(context).textTheme.titleSmall,
+                _category,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: titleFontSize,
+                    ),
               ),
               TextButton(
                 onPressed: () {
-                  // Navigate to CategoryProductsScreen and pass the category name
                   Navigator.pushNamed(
                     context,
                     categoryProductsScreen,
                     arguments: _category,
                   );
                 },
-                child: const Text(
+                child: Text(
                   'View All',
                   style: TextStyle(
                     color: kPrimaryColor,
-                    fontSize: 14,
+                    fontSize: isDesktop ? 16 : 14,
                   ),
                 ),
               ),
@@ -83,7 +95,7 @@ class _PopularProductsState extends State<PopularProducts> {
           ),
         ),
         SizedBox(
-          height: 220,
+          height: containerHeight,
           child: FutureBuilder<List<ProductModel>>(
             future: _productsFuture,
             builder: (context, snapshot) {
@@ -96,14 +108,17 @@ class _PopularProductsState extends State<PopularProducts> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline,
-                          color: errorColor, size: 40),
+                      Icon(Icons.error_outline,
+                          color: errorColor, size: isDesktop ? 56 : 40),
                       const SizedBox(height: 8),
-                      Text('Error loading $_category'),
+                      Text(
+                        'Error loading $_category',
+                        style: TextStyle(fontSize: isDesktop ? 18 : 16),
+                      ),
                       const SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: _loadProducts,
-                        child: const Text('Retry'),
+                        child: Text(isDesktop ? 'Retry' : 'Retry'),
                       ),
                     ],
                   ),
@@ -115,9 +130,13 @@ class _PopularProductsState extends State<PopularProducts> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.inventory_2_outlined, size: 40),
+                      Icon(Icons.inventory_2_outlined,
+                          size: isDesktop ? 56 : 40),
                       const SizedBox(height: 8),
-                      Text('No $_category found'),
+                      Text(
+                        'No $_category found',
+                        style: TextStyle(fontSize: isDesktop ? 18 : 16),
+                      ),
                       const SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: _loadProducts,
@@ -130,6 +149,47 @@ class _PopularProductsState extends State<PopularProducts> {
 
               final products = snapshot.data!;
 
+              // Desktop/Tablet: Grid layout
+              if (!isMobile) {
+                final crossAxisCount = isDesktop ? 4 : 3;
+                return SizedBox(
+                  height: containerHeight,
+                  width: double.infinity,
+                  child: GridView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.symmetric(horizontal: padding),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.85,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) => SizedBox(
+                      width: cardWidth,
+                      child: ProductCard(
+                        image: products[index].image,
+                        brandName: products[index].brandName,
+                        title: products[index].title,
+                        price: products[index].price.toDouble(),
+                        priceAfetDiscount:
+                            products[index].priceAfetDiscount?.toDouble(),
+                        rating: products[index].rating,
+                        reviews: products[index].reviews,
+                        press: () {
+                          Navigator.pushNamed(
+                            context,
+                            productDetailsScreenRoute,
+                            arguments: products[index],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              // Mobile: Horizontal scroll
               return ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: products.length,
@@ -138,22 +198,25 @@ class _PopularProductsState extends State<PopularProducts> {
                     left: defaultPadding,
                     right: index == products.length - 1 ? defaultPadding : 0,
                   ),
-                  child: ProductCard(
-                    image: products[index].image,
-                    brandName: products[index].brandName,
-                    title: products[index].title,
-                    price: products[index].price.toDouble(),
-                    priceAfetDiscount:
-                        products[index].priceAfetDiscount?.toDouble(),
-                    rating: products[index].rating,
-                    reviews: products[index].reviews,
-                    press: () {
-                      Navigator.pushNamed(
-                        context,
-                        productDetailsScreenRoute,
-                        arguments: products[index],
-                      );
-                    },
+                  child: SizedBox(
+                    width: cardWidth,
+                    child: ProductCard(
+                      image: products[index].image,
+                      brandName: products[index].brandName,
+                      title: products[index].title,
+                      price: products[index].price.toDouble(),
+                      priceAfetDiscount:
+                          products[index].priceAfetDiscount?.toDouble(),
+                      rating: products[index].rating,
+                      reviews: products[index].reviews,
+                      press: () {
+                        Navigator.pushNamed(
+                          context,
+                          productDetailsScreenRoute,
+                          arguments: products[index],
+                        );
+                      },
+                    ),
                   ),
                 ),
               );

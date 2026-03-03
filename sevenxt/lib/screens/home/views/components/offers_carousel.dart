@@ -8,6 +8,7 @@ import 'package:sevenxt/components/Banner/M/banner_m_style_4.dart';
 import 'package:sevenxt/components/dot_indicators.dart';
 import 'package:sevenxt/components/skleton/others/offers_skelton.dart';
 import 'package:sevenxt/route/api_service.dart';
+import 'package:sevenxt/utils/responsive.dart';
 
 import '../../../../constants.dart';
 
@@ -106,16 +107,21 @@ class _OffersCarouselState extends State<OffersCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final bannerHeight = Responsive.bannerHeight(context);
+    final isDesktop = Responsive.isDesktop(context);
+
     if (_isLoading) {
       return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             maxWidth: 1200,
-            maxHeight: 500,
           ),
-          child: const AspectRatio(
+          child: AspectRatio(
             aspectRatio: 1.87,
-            child: OffersSkelton(),
+            child: SizedBox(
+              height: bannerHeight,
+              child: const OffersSkelton(),
+            ),
           ),
         ),
       );
@@ -125,28 +131,30 @@ class _OffersCarouselState extends State<OffersCarousel> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             maxWidth: 1200,
-            maxHeight: 500, // SAME as success state
           ),
           child: AspectRatio(
             aspectRatio: 1.87,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'No offers available',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: 160,
-                    child: ElevatedButton.icon(
-                      onPressed: _loadBanners,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
+            child: SizedBox(
+              height: bannerHeight,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'No offers available',
+                      style: TextStyle(color: Colors.grey),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: 160,
+                      child: ElevatedButton.icon(
+                        onPressed: _loadBanners,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -154,54 +162,46 @@ class _OffersCarouselState extends State<OffersCarousel> {
       );
     }
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: 1200,
-          maxHeight: 500, // prevents banner from stretching on desktop
-        ),
-        child: AspectRatio(
-          aspectRatio: 1.87,
-          child: Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              PageView.builder(
-                controller: _pageController,
-                itemCount: _bannerImages.length,
-                onPageChanged: (int index) {
-                  if (mounted) {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                  }
-                },
-                itemBuilder: (context, index) =>
-                    _buildBannerWidget(_bannerImages[index], index),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(defaultPadding),
-                child: SizedBox(
-                  height: 16,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(
-                      _bannerImages.length,
-                      (index) => Padding(
-                        padding:
-                            const EdgeInsets.only(left: defaultPadding / 4),
-                        child: DotIndicator(
-                          isActive: index == _selectedIndex,
-                          activeColor: whiteColor,
-                          inActiveColor: whiteColor,
-                        ),
-                      ),
+    return SizedBox(
+      height: bannerHeight,
+      width: double.infinity,
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            itemCount: _bannerImages.length,
+            onPageChanged: (int index) {
+              if (mounted) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              }
+            },
+            itemBuilder: (context, index) =>
+                _buildBannerWidget(_bannerImages[index], index),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(defaultPadding),
+            child: SizedBox(
+              height: 16,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  _bannerImages.length,
+                  (index) => Padding(
+                    padding: const EdgeInsets.only(left: defaultPadding / 4),
+                    child: DotIndicator(
+                      isActive: index == _selectedIndex,
+                      activeColor: whiteColor,
+                      inActiveColor: whiteColor,
                     ),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
