@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-jose[cryptography]
+passlib[bcrypt]
+psycopg2-binary
+python-dotenv
+twilio
+razorpay
+pydantic
+pydantic-settings
+email-validator
+requests
+python-multipart
