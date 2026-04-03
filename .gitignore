@@ -1,1 +1,22 @@
 .env
+# Credentials & Backups
+credentials_backup.md
+*.sql
+*.sqlite3
+
+# Python Virtual Environments
+app/backend/venv/
+app/backend/venv2/
+app/backend/__pycache__/
+app/backend/*.pyc
+.pytest_cache/
+
+# User Uploads
+app/backend/uploads/
+app/backend/business/
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

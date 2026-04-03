@@ -75,7 +75,7 @@ load_dotenv()
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")  # Fallback for local dev
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_VERIFY_SERVICE_SID = "VA0ba7f74076c233e8f8ca021f2668c245"  # You need to create this in Twilio Console
+TWILIO_VERIFY_SERVICE_SID = os.getenv("TWILIO_VERIFY_SERVICE_SID", "VA0ba7f74076c233e8f8ca021f2668c245")
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 # Initialize RazorPay client
