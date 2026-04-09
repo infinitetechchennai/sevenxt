@@ -12,3 +12,4 @@ pydantic-settings
 email-validator
 requests
 python-multipart
+cloudinary
