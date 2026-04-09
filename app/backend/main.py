@@ -12,7 +12,8 @@ import requests
 from datetime import datetime, timedelta,timezone
 from fastapi import Request,FastAPI,APIRouter, HTTPException, Depends, UploadFile, File, Form, status,Body,Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+import cloudinary
+import cloudinary.uploader
 from fastapi.security import OAuth2PasswordBearer
 import urllib.parse
 from jose import jwt, JWTError
@@ -30,13 +31,24 @@ from dotenv import load_dotenv
 
 
 
-UPLOAD_FOLDER = "uploads"
-BASE_UPLOAD_DIR = os.path.join(UPLOAD_FOLDER, "business", "app")
-GST_DIR = os.path.join(BASE_UPLOAD_DIR, "gst")
-LICENSE_DIR = os.path.join(BASE_UPLOAD_DIR, "license")
+# Cloudinary configuration (replaces local file storage)
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
+)
 
-os.makedirs(GST_DIR, exist_ok=True)
-os.makedirs(LICENSE_DIR, exist_ok=True)
+async def upload_to_cloudinary(file: UploadFile, folder: str = "sevenxt") -> str:
+    """Upload a file to Cloudinary and return a permanent secure URL."""
+    content = await file.read()
+    result = cloudinary.uploader.upload(
+        content,
+        folder=folder,
+        resource_type="auto",
+        public_id=str(uuid.uuid4())
+    )
+    return result["secure_url"]
 ZONE_LOCAL = "local"
 ZONE_ZONAL = "zonal"
 ZONE_NATIONAL = "national"
@@ -91,7 +103,6 @@ otp_store = {}
 
 
 app = FastAPI(title="backendapi")
-app.mount("/uploads", StaticFiles(directory=UPLOAD_FOLDER), name="uploads")
 
 # CORS Configuration
 app.add_middleware(
@@ -500,20 +511,8 @@ async def register_b2b(
         """, (user_id, email, hashed_pw, business_name, phone, "{}"))
 
         # ✅ Save documents
-        gst_filename = f"{user_id}_{gst_certificate.filename}"
-        license_filename = f"{user_id}_{business_license.filename}"
-
-        gst_fs_path = os.path.join(GST_DIR, gst_filename)
-        license_fs_path = os.path.join(LICENSE_DIR, license_filename)
-
-        with open(gst_fs_path, "wb") as f:
-             f.write(await gst_certificate.read())
-
-        with open(license_fs_path, "wb") as f:
-             f.write(await business_license.read())
-
-        gst_public_url = f"{BASE_URL}/uploads/business/app/gst/{gst_filename}"
-        license_public_url = f"{BASE_URL}/uploads/business/app/license/{license_filename}"
+        gst_public_url = await upload_to_cloudinary(gst_certificate, folder="sevenxt/b2b/gst")
+        license_public_url = await upload_to_cloudinary(business_license, folder="sevenxt/b2b/license")
 
         # ✅ Address handling
         address_id = None
@@ -2084,25 +2083,12 @@ async def create_refund(
         print(f"DEBUG: current_user={current_user}")
         print(f"DEBUG: Number of images: {len(images)}")
 
-        # === Upload images ===
+        # === Upload images to Cloudinary ===
         image_urls = []
         for i, file in enumerate(images):
-            print(f"DEBUG: Processing image {i+1}: {file.filename}")
             if file and file.filename:
-                ext = file.filename.rsplit(".", 1)[-1]
-                filename = f"{uuid.uuid4()}.{ext}"
-                path = os.path.join(UPLOAD_FOLDER, filename)
-                print(f"DEBUG: Saving image to: {path}")
-                
-                try:
-                    with open(path, "wb") as f:
-                        content = await file.read()
-                        f.write(content)
-                        print(f"DEBUG: Image saved successfully: {filename}, size: {len(content)} bytes")
-                    image_urls.append(f"{BASE_URL.rstrip('/')}/uploads/{filename}")
-                except Exception as img_error:
-                    print(f"DEBUG: Error saving image: {str(img_error)}")
-                    raise
+                url = await upload_to_cloudinary(file, folder="sevenxt/returns/refund")
+                image_urls.append(url)
 
         images_json = json.dumps(image_urls)
         print(f"DEBUG: Image URLs JSON: {images_json}")
@@ -2292,16 +2278,12 @@ async def create_exchange(
         print(f"DEBUG: current_user={current_user}")
         print(f"DEBUG: Number of images: {len(images)}")
 
-        # === Upload images ===
+        # === Upload images to Cloudinary ===
         image_urls = []
         for file in images:
             if file and file.filename:
-                ext = file.filename.rsplit(".", 1)[-1]
-                name = f"{uuid.uuid4()}.{ext}"
-                path = os.path.join(UPLOAD_FOLDER, name)
-                with open(path, "wb") as f:
-                    f.write(await file.read())
-                image_urls.append(f"{BASE_URL.rstrip('/')}/uploads/{name}")
+                url = await upload_to_cloudinary(file, folder="sevenxt/returns/exchange")
+                image_urls.append(url)
 
         images_json = json.dumps(image_urls)
 
