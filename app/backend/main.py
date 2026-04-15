@@ -1650,28 +1650,31 @@ REGISTERED_STATES = {"tamil nadu"}
 def generate_internal_order_id(cursor) -> str:
     """Generate ORD-YYYY-MM-XXXX order IDs independent of client payload."""
     now = datetime.utcnow()
-    prefix = f"ORD-{now.strftime('%Y-%m')}-"
+    year_month = now.strftime("%Y-%m")
+    year = now.strftime("%Y")
+    month = now.strftime("%m")
 
     cursor.execute(
         """
-        SELECT order_id
-        FROM orders
-        WHERE order_id LIKE %s
-        ORDER BY order_id DESC
-        LIMIT 1
-        """,
-        (f"{prefix}%",),
+        CREATE TABLE IF NOT EXISTS order_sequence (
+            year_month VARCHAR(7) PRIMARY KEY,
+            last_seq INT NOT NULL DEFAULT 0
+        );
+        """
     )
-    last_row = cursor.fetchone()
 
-    next_seq = 1
-    if last_row and last_row[0]:
-        try:
-            next_seq = int(str(last_row[0]).split("-")[-1]) + 1
-        except (ValueError, IndexError):
-            next_seq = 1
-
-    return f"{prefix}{str(next_seq).zfill(4)}"
+    cursor.execute(
+        """
+        INSERT INTO order_sequence (year_month, last_seq)
+        VALUES (%s, 1)
+        ON CONFLICT (year_month)
+        DO UPDATE SET last_seq = order_sequence.last_seq + 1
+        RETURNING last_seq
+        """,
+        (year_month,),
+    )
+    seq = cursor.fetchone()[0]
+    return f"ORD-{year}-{month}-{str(seq).zfill(4)}"
 
 
 def compute_gst(total_amount: float, buyer_state: Optional[str]):
@@ -1683,14 +1686,16 @@ def compute_gst(total_amount: float, buyer_state: Optional[str]):
     if is_intra_state:
         cgst_percentage = 9.0
         sgst_percentage = 9.0
+        igst_percentage = 0.0
         central_gst_amount = round(subtotal * (cgst_percentage / 100), 2)
         state_gst_amount = round(subtotal * (sgst_percentage / 100), 2)
     else:
         # Inter-state billing uses IGST only; DB has only SGST/CGST columns,
         # so persist IGST into central_gst_amount and keep SGST at zero.
-        cgst_percentage = 18.0
+        cgst_percentage = 0.0
         sgst_percentage = 0.0
-        central_gst_amount = round(subtotal * (cgst_percentage / 100), 2)
+        igst_percentage = 18.0
+        central_gst_amount = round(subtotal * (igst_percentage / 100), 2)
         state_gst_amount = 0.0
 
     return {
@@ -1698,6 +1703,7 @@ def compute_gst(total_amount: float, buyer_state: Optional[str]):
         "central_gst_amount": central_gst_amount,
         "sgst_percentage": sgst_percentage,
         "cgst_percentage": cgst_percentage,
+        "igst_percentage": igst_percentage,
     }
 
 @app.post("/orders/place")
@@ -1741,10 +1747,10 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
         cursor.execute("""
         INSERT INTO orders (
             order_id, customer, email, phone, amount, shipping_fee,
-            state_gst_amount, central_gst_amount, sgst_percentage, cgst_percentage,
+            state_gst_amount, central_gst_amount, sgst_percentage, cgst_percentage, igst_percentage,
             items_count, customer_type, status, payment, payment_method, products,
             created_at, address, hsn, weight, height, length, breadth, city, state, pincode, original_price,customer_name
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """, (
             generated_order_id,
@@ -1757,6 +1763,7 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
             gst_breakdown["central_gst_amount"],
             gst_breakdown["sgst_percentage"],
             gst_breakdown["cgst_percentage"],
+            gst_breakdown["igst_percentage"],
             len(order_data.products),
             actual_customer_type,
             actual_order_status,
