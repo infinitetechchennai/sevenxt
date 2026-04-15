@@ -1642,8 +1642,6 @@ def map_order_status_for_app(db_status: str) -> str:
     if db_status in ["Pending", "Confirmed", "Processing"]:
         return "Ordered"
     return db_status or "Ordered"
-<<<<<<< HEAD
-=======
 
 
 REGISTERED_STATES = {"tamil nadu"}
@@ -1702,8 +1700,6 @@ def compute_gst(total_amount: float, buyer_state: Optional[str]):
         "cgst_percentage": cgst_percentage,
     }
 
-
->>>>>>> d99a9ce (fixed Issues)
 @app.post("/orders/place")
 async def place_order_from_app(order_data: OrderCreate, current_user_id: str = Depends(get_current_user)):
     """
@@ -1718,11 +1714,8 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
 
         # Get user type from token
         actual_customer_type = order_data.customer_type or "b2c"
-<<<<<<< HEAD
-=======
         generated_order_id = generate_internal_order_id(cursor)
         gst_breakdown = compute_gst(order_data.total_price, order_data.state)
->>>>>>> d99a9ce (fixed Issues)
 
 
         # Extract order-level dimensions and HSN (use values from first product or calculate aggregate)
@@ -1754,27 +1747,16 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """, (
-<<<<<<< HEAD
-            order_data.order_id,
-=======
             generated_order_id,
->>>>>>> d99a9ce (fixed Issues)
             current_user_id,
             order_data.customer_email,
             order_data.phone,
             order_data.total_price,
             order_data.shipping_fee,
-<<<<<<< HEAD
-            order_data.state_gst_amount,
-            order_data.central_gst_amount,
-            order_data.sgst_percentage,  
-            order_data.cgst_percentage,
-=======
             gst_breakdown["state_gst_amount"],
             gst_breakdown["central_gst_amount"],
             gst_breakdown["sgst_percentage"],
             gst_breakdown["cgst_percentage"],
->>>>>>> d99a9ce (fixed Issues)
             len(order_data.products),
             actual_customer_type,
             actual_order_status,
@@ -1805,11 +1787,7 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
             ) VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
             """, (
-<<<<<<< HEAD
-                order_data.order_id,
-=======
                 generated_order_id,
->>>>>>> d99a9ce (fixed Issues)
                 product.name,
                 product.imageUrl,
                 product.price,
@@ -1851,11 +1829,7 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
 
         return {
             "message": "Order saved successfully",
-<<<<<<< HEAD
-            "order_id": order_data.order_id,
-=======
             "order_id": generated_order_id,
->>>>>>> d99a9ce (fixed Issues)
             "user_id_saved_as_customer": current_user_id,
             "payment_status": order_data.payment_status,
             "created_order_items": created_order_items
