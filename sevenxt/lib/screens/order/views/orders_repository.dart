@@ -373,6 +373,9 @@ class OrdersRepository {
       // Convert Order model to the format expected by FastAPI
       final orderData = {
         'order_id': order.id,
+        // Store Razorpay Order ID separately for invoices/admin.
+        // In current flow, `order.id` is set to the Razorpay order id (order_...).
+        'razorpay_order_id': order.id,
         'id': order.numericId,
         'placed_on': _formatDateForBackend(order.placedOn),
         'order_status': order.orderStatus.toString().split('.').last,
