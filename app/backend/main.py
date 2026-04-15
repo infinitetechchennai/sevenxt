@@ -1728,6 +1728,7 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
 
         # Get user type from token
         actual_customer_type = order_data.customer_type or "b2c"
+        print(f"[ORDER_PLACE] incoming order_data.order_id={getattr(order_data, 'order_id', None)} razorpay_order_id={getattr(order_data, 'razorpay_order_id', None)}")
         generated_order_id = generate_internal_order_id(cursor)
         gst_breakdown = compute_gst(order_data.total_price, order_data.state)
 
