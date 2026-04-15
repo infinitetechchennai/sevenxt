@@ -1665,13 +1665,21 @@ def generate_internal_order_id(cursor) -> str:
 
     cursor.execute(
         """
+        WITH latest AS (
+            SELECT COALESCE(
+                MAX(NULLIF(split_part(order_id, '-', 4), '')::int),
+                0
+            ) AS max_seq
+            FROM orders
+            WHERE order_id LIKE %s
+        )
         INSERT INTO order_sequence (year_month, last_seq)
-        VALUES (%s, 1)
+        VALUES (%s, (SELECT max_seq + 1 FROM latest))
         ON CONFLICT (year_month)
         DO UPDATE SET last_seq = order_sequence.last_seq + 1
         RETURNING last_seq
         """,
-        (year_month,),
+        (f"ORD-{year_month}-%", year_month),
     )
     seq = cursor.fetchone()[0]
     return f"ORD-{year}-{month}-{str(seq).zfill(4)}"
