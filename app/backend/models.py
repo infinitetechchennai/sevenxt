@@ -106,6 +106,7 @@ class OrderCreate(BaseModel):
     central_gst_amount: float
     sgst_percentage: float = 0.0 
     cgst_percentage: float = 0.0
+    razorpay_order_id: Optional[str] = None
     customer_email: str
     phone: str
     customer_address_text: str

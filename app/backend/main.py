@@ -1757,8 +1757,9 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
             order_id, customer, email, phone, amount, shipping_fee,
             state_gst_amount, central_gst_amount, sgst_percentage, cgst_percentage, igst_percentage,
             items_count, customer_type, status, payment, payment_method, products,
-            created_at, address, hsn, weight, height, length, breadth, city, state, pincode, original_price,customer_name
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            created_at, address, hsn, weight, height, length, breadth, city, state, pincode, original_price,customer_name,
+            razorpay_order_id
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """, (
             generated_order_id,
@@ -1789,7 +1790,8 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
             order_data.state,
             order_data.pincode,
             original_price,
-            order_data.customer_name
+            order_data.customer_name,
+            order_data.razorpay_order_id
         ))
         
         db_order_id = cursor.fetchone()[0]
