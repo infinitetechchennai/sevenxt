@@ -1642,6 +1642,68 @@ def map_order_status_for_app(db_status: str) -> str:
     if db_status in ["Pending", "Confirmed", "Processing"]:
         return "Ordered"
     return db_status or "Ordered"
+<<<<<<< HEAD
+=======
+
+
+REGISTERED_STATES = {"tamil nadu"}
+
+
+def generate_internal_order_id(cursor) -> str:
+    """Generate ORD-YYYY-MM-XXXX order IDs independent of client payload."""
+    now = datetime.utcnow()
+    prefix = f"ORD-{now.strftime('%Y-%m')}-"
+
+    cursor.execute(
+        """
+        SELECT order_id
+        FROM orders
+        WHERE order_id LIKE %s
+        ORDER BY order_id DESC
+        LIMIT 1
+        """,
+        (f"{prefix}%",),
+    )
+    last_row = cursor.fetchone()
+
+    next_seq = 1
+    if last_row and last_row[0]:
+        try:
+            next_seq = int(str(last_row[0]).split("-")[-1]) + 1
+        except (ValueError, IndexError):
+            next_seq = 1
+
+    return f"{prefix}{str(next_seq).zfill(4)}"
+
+
+def compute_gst(total_amount: float, buyer_state: Optional[str]):
+    """Compute GST based on buyer state (intra -> CGST/SGST, inter -> IGST)."""
+    amount = float(total_amount or 0)
+    subtotal = round(amount / 1.18, 2) if amount else 0.0
+    is_intra_state = (buyer_state or "").strip().lower() in REGISTERED_STATES
+
+    if is_intra_state:
+        cgst_percentage = 9.0
+        sgst_percentage = 9.0
+        central_gst_amount = round(subtotal * (cgst_percentage / 100), 2)
+        state_gst_amount = round(subtotal * (sgst_percentage / 100), 2)
+    else:
+        # Inter-state billing uses IGST only; DB has only SGST/CGST columns,
+        # so persist IGST into central_gst_amount and keep SGST at zero.
+        cgst_percentage = 18.0
+        sgst_percentage = 0.0
+        central_gst_amount = round(subtotal * (cgst_percentage / 100), 2)
+        state_gst_amount = 0.0
+
+    return {
+        "state_gst_amount": state_gst_amount,
+        "central_gst_amount": central_gst_amount,
+        "sgst_percentage": sgst_percentage,
+        "cgst_percentage": cgst_percentage,
+    }
+
+
+>>>>>>> d99a9ce (fixed Issues)
 @app.post("/orders/place")
 async def place_order_from_app(order_data: OrderCreate, current_user_id: str = Depends(get_current_user)):
     """
@@ -1656,6 +1718,11 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
 
         # Get user type from token
         actual_customer_type = order_data.customer_type or "b2c"
+<<<<<<< HEAD
+=======
+        generated_order_id = generate_internal_order_id(cursor)
+        gst_breakdown = compute_gst(order_data.total_price, order_data.state)
+>>>>>>> d99a9ce (fixed Issues)
 
 
         # Extract order-level dimensions and HSN (use values from first product or calculate aggregate)
@@ -1687,16 +1754,27 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """, (
+<<<<<<< HEAD
             order_data.order_id,
+=======
+            generated_order_id,
+>>>>>>> d99a9ce (fixed Issues)
             current_user_id,
             order_data.customer_email,
             order_data.phone,
             order_data.total_price,
             order_data.shipping_fee,
+<<<<<<< HEAD
             order_data.state_gst_amount,
             order_data.central_gst_amount,
             order_data.sgst_percentage,  
             order_data.cgst_percentage,
+=======
+            gst_breakdown["state_gst_amount"],
+            gst_breakdown["central_gst_amount"],
+            gst_breakdown["sgst_percentage"],
+            gst_breakdown["cgst_percentage"],
+>>>>>>> d99a9ce (fixed Issues)
             len(order_data.products),
             actual_customer_type,
             actual_order_status,
@@ -1727,7 +1805,11 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
             ) VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
             """, (
+<<<<<<< HEAD
                 order_data.order_id,
+=======
+                generated_order_id,
+>>>>>>> d99a9ce (fixed Issues)
                 product.name,
                 product.imageUrl,
                 product.price,
@@ -1769,7 +1851,11 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
 
         return {
             "message": "Order saved successfully",
+<<<<<<< HEAD
             "order_id": order_data.order_id,
+=======
+            "order_id": generated_order_id,
+>>>>>>> d99a9ce (fixed Issues)
             "user_id_saved_as_customer": current_user_id,
             "payment_status": order_data.payment_status,
             "created_order_items": created_order_items

@@ -1,22 +1,45 @@
-Sevenxt Project Ecosystem
-Sevenxt is a state-of-the-art e-commerce solution comprising a premium mobile frontend and a high-performance backend.This repository is organized as a monorepo containing both the application and its supporting infrastructure.
+# SevenXT Mobile + App Backend
 
-Repository Structure
+This repository contains the customer-facing SevenXT mobile app (Flutter) and its FastAPI backend used by the app.
 
-Component	Directory	Description
-Frontend	sevenxt/	Premium Flutter E-commerce UI Kit and Client App.
-Backend	app/backend/	FastAPI Python server handling business logic and integrations.
-Quick Start
-Prerequisites
-Frontend: Flutter SDK, Android Studio/Xcode.
-Backend: Python 3.10+, PostgreSQL.
-Installation
-Backend: Navigate to app/backend/, set up your .env file, and run uvicorn main:app --reload.
+## Project Structure
 
-Frontend: Navigate to sevenxt/, run flutter pub get, and then flutter run. 
+- `sevenxt/` - Flutter mobile application.
+- `app/backend/` - FastAPI backend for auth, orders, payment, shipping, and integrations.
+- `.github/` - CI/config automation files.
 
-Core Integrations
-Payments: Razorpay
-SMS/OTP: Twilio
-Logistics: Delhivery
-Auth: JWT-based Secure Authentication
+## Tech Stack
+
+- **Mobile:** Flutter (Dart)
+- **Backend:** FastAPI + PostgreSQL
+- **Payments:** Razorpay
+- **OTP/SMS:** Twilio
+- **Shipping:** Delhivery
+- **Auth:** JWT
+
+## Local Setup
+
+### 1) Backend
+
+From `app/backend/`:
+
+1. Create and activate a virtual environment.
+2. Install dependencies:
+   - `pip install -r requirements.txt`
+3. Configure `.env` values (DB, JWT, Razorpay, Twilio, Delhivery).
+4. Run server:
+   - `uvicorn main:app --reload`
+
+### 2) Flutter App
+
+From `sevenxt/`:
+
+1. Install dependencies:
+   - `flutter pub get`
+2. Run:
+   - `flutter run`
+
+## Notes
+
+- Keep secrets only in `.env` and never commit credentials.
+- Runtime/generated folders (for example `__pycache__`, `uploads`) should stay out of version control.
