@@ -101,10 +101,23 @@ class _CartScreenState extends State<CartScreen> {
     double stateGstTotal = 0.0;
     double centralGstTotal = 0.0;
 
+    String currentState = _selectedAddress?.state?.toLowerCase().replaceAll(' ', '') ?? "";
+    bool isIntraState = currentState == "tamilnadu" || currentState.isEmpty;
+
     for (var item in _cart.items) {
-      stateGstTotal += _calculateItemStateGST(item.product, item.quantity);
-      centralGstTotal += _calculateItemCentralGST(item.product, item.quantity);
+      double sgst = _calculateItemStateGST(item.product, item.quantity);
+      double cgst = _calculateItemCentralGST(item.product, item.quantity);
+
+      if (isIntraState) {
+        stateGstTotal += sgst;
+        centralGstTotal += cgst;
+      } else {
+        // Inter-state: IGST takes the sum of both, SGST is 0
+        stateGstTotal += 0.0;
+        centralGstTotal += (sgst + cgst);
+      }
     }
+    
     return {
       'state_gst': stateGstTotal,
       'central_gst': centralGstTotal,
@@ -344,8 +357,12 @@ class _CartScreenState extends State<CartScreen> {
                     children: [
                       _buildSummaryRow('Subtotal', subtotal),
                       _buildShippingRow(),
-                      _buildSummaryRow('State GST', stateGstTotal),
-                      _buildSummaryRow('Central GST', centralGstTotal),
+                      if ((_selectedAddress?.state?.toLowerCase().replaceAll(' ', '') ?? "").contains("tamilnadu") || _selectedAddress == null) ...[
+                        _buildSummaryRow('CGST (9%)', centralGstTotal),
+                        _buildSummaryRow('SGST (9%)', stateGstTotal),
+                      ] else ...[
+                        _buildSummaryRow('IGST (18%)', centralGstTotal),
+                      ],
                       const Divider(height: defaultPadding * 2),
                       _buildSummaryRow('Total Price', grandTotal, isBold: true),
                     ],
