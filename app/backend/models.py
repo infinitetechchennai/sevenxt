@@ -44,7 +44,6 @@ class ResetPasswordRequest(BaseModel):
 class AddressCreate(BaseModel):
     address: str
     city: str
-    state:str
     pincode: Optional[int] = None
     state: Optional[str] = None
     country: str
@@ -95,7 +94,7 @@ class OrderedProductBase(BaseModel):
     
 
 class OrderCreate(BaseModel):
-    order_id: str # Unique ID from Flutter (e.g., timestamp)
+    order_id: str # Client-supplied order ID, typically the Razorpay order id
     placed_on: str # Date string
     order_status: str # e.g., 'processing'
     customer_name: str
@@ -133,7 +132,7 @@ class VerifyPaymentRequest(BaseModel):
     razorpay_order_id: str
     razorpay_payment_id: str
     razorpay_signature: str
-    order_id: str  # Your internal order ID    
+    order_id: str  # App-visible order ID    
 class NotificationOut(BaseModel):
     id: int
     title: str

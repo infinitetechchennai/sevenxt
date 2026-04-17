@@ -426,7 +426,7 @@ async def register_b2c(payload: B2CRegister):
             cursor.execute("""
                 INSERT INTO addresses (id, address, city, state,pincode, country, user_id)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (address_id, payload.address.address, payload.address.state,payload.address.city, 
+            """, (address_id, payload.address.address, payload.address.city, payload.address.state, 
                   payload.address.pincode, payload.address.country, user_id))
 
             cursor.execute("""
@@ -1644,7 +1644,19 @@ def map_order_status_for_app(db_status: str) -> str:
     return db_status or "Ordered"
 
 
-REGISTERED_STATES = {"tamil nadu"}
+def normalize_state_for_gst(value: Optional[str]) -> str:
+    """
+    Normalize state strings for GST logic.
+    Examples: "Tamil Nadu", "tamilnadu", " TAMIL  NADU " -> "tamilnadu"
+    """
+    if not value:
+        return ""
+    s = str(value).strip().lower()
+    # keep only alphanumerics, drop spaces/punctuation
+    return "".join(ch for ch in s if ch.isalnum())
+
+
+REGISTERED_STATES = {"tamilnadu"}
 
 
 def generate_internal_order_id(cursor) -> str:
@@ -1685,11 +1697,37 @@ def generate_internal_order_id(cursor) -> str:
     return f"ORD-{year}-{month}-{str(seq).zfill(4)}"
 
 
+def normalize_order_id(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+
+    normalized = str(value).strip()
+    return normalized or None
+
+
+def resolve_public_order_id(order_data: OrderCreate, cursor):
+    """
+    Prefer the Razorpay order id as the app-visible order id.
+    Fall back to the legacy internal ORD-YYYY-MM-XXXX format only when
+    the request does not carry a Razorpay-style order id.
+    """
+    razorpay_order_id = normalize_order_id(order_data.razorpay_order_id)
+    client_order_id = normalize_order_id(order_data.order_id)
+
+    if not razorpay_order_id and client_order_id and client_order_id.lower().startswith("order_"):
+        razorpay_order_id = client_order_id
+
+    public_order_id = razorpay_order_id or generate_internal_order_id(cursor)
+    return public_order_id, razorpay_order_id
+
+
 def compute_gst(total_amount: float, buyer_state: Optional[str]):
     """Compute GST based on buyer state (intra -> CGST/SGST, inter -> IGST)."""
     amount = float(total_amount or 0)
     subtotal = round(amount / 1.18, 2) if amount else 0.0
-    is_intra_state = (buyer_state or "").strip().lower() in REGISTERED_STATES
+    normalized_state = normalize_state_for_gst(buyer_state)
+    # Match legacy app behavior: if state missing, treat as intra-state (CGST/SGST).
+    is_intra_state = (not normalized_state) or (normalized_state in REGISTERED_STATES)
 
     if is_intra_state:
         cgst_percentage = 9.0
@@ -1729,7 +1767,8 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
         # Get user type from token
         actual_customer_type = order_data.customer_type or "b2c"
         print(f"[ORDER_PLACE] incoming order_data.order_id={getattr(order_data, 'order_id', None)} razorpay_order_id={getattr(order_data, 'razorpay_order_id', None)}")
-        generated_order_id = generate_internal_order_id(cursor)
+        public_order_id, razorpay_order_id = resolve_public_order_id(order_data, cursor)
+        print(f"[ORDER_PLACE] resolved public_order_id={public_order_id} stored_razorpay_order_id={razorpay_order_id}")
         gst_breakdown = compute_gst(order_data.total_price, order_data.state)
 
 
@@ -1763,7 +1802,7 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """, (
-            generated_order_id,
+            public_order_id,
             current_user_id,
             order_data.customer_email,
             order_data.phone,
@@ -1792,7 +1831,7 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
             order_data.pincode,
             original_price,
             order_data.customer_name,
-            order_data.razorpay_order_id
+            razorpay_order_id
         ))
         
         db_order_id = cursor.fetchone()[0]
@@ -1805,7 +1844,7 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
             ) VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
             """, (
-                generated_order_id,
+                public_order_id,
                 product.name,
                 product.imageUrl,
                 product.price,
@@ -1847,7 +1886,7 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
 
         return {
             "message": "Order saved successfully",
-            "order_id": generated_order_id,
+            "order_id": public_order_id,
             "user_id_saved_as_customer": current_user_id,
             "payment_status": order_data.payment_status,
             "created_order_items": created_order_items
