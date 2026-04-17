@@ -515,7 +515,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         subtotal + (_displayShippingFee ?? 0.0) + totalGst - _couponDiscount;
 
     final options = {
-      'key': 'rzp_test_RsbvNk5QaP0H82',
+      'key': const String.fromEnvironment('RAZORPAY_KEY', defaultValue: ''),
       'amount': (totalAmount * 100).toInt(),
       'currency': 'INR',
       'order_id': _razorpayOrderId,
