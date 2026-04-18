@@ -150,6 +150,25 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  // PUT Multipart (for file uploads updates)
+  static Future<Map<String, dynamic>> putMultipart(
+    String endpoint, {
+    Map<String, String>? fields,
+    required List<http.MultipartFile> files,
+  }) async {
+    final request =
+        http.MultipartRequest('PUT', Uri.parse('$baseUrl$endpoint'));
+
+    request.headers.addAll(await _headers);
+    if (fields != null) request.fields.addAll(fields);
+    request.files.addAll(files);
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    return _handleResponse(response);
+  }
+
   // GET
   static Future<Map<String, dynamic>> get(String endpoint) async {
     final response = await http.get(
