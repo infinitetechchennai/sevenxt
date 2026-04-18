@@ -323,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Text("Don't have an account? "),
                           TextButton(
                             onPressed: () =>
-                                Navigator.pushNamed(context, signUpScreenRoute),
+                                Navigator.pushNamed(context, signUpScreenRoute, arguments: {'isB2B': !isB2CSelected}),
                             child: const Text("Sign up"),
                           ),
                         ],

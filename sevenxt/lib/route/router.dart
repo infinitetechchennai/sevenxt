@@ -54,7 +54,8 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(
           builder: (context) => const PrivacyPolicyScreen());
     case signUpScreenRoute:
-      return MaterialPageRoute(builder: (context) => const SignUpScreen());
+      final args = settings.arguments as Map<String, dynamic>?;
+      return MaterialPageRoute(builder: (context) => SignUpScreen(isB2B: args?['isB2B'] ?? false));
     case b2bApprovalPendingRoute: // NEW
       return MaterialPageRoute(
           builder: (context) => const B2BApprovalPendingScreen());

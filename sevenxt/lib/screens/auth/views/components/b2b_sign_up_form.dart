@@ -426,9 +426,7 @@ class _B2BSignUpState extends State<B2BSignUpForm> {
             textInputAction: TextInputAction.next,
             keyboardType: TextInputType.visiblePassword,
             obscureText: !_showPassword,
-            validator: (value) => value != null && value.length >= 6
-                ? null
-                : 'Password must be at least 6 characters',
+            validator: passwordValidator.call,
             decoration: InputDecoration(
                 hintText: "Password",
                 prefixIcon: Padding(

@@ -6,7 +6,8 @@ import 'package:sevenxt/screens/auth/views/components/user_sign_up_form.dart';
 import '../../../constants.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  final bool isB2B;
+  const SignUpScreen({super.key, this.isB2B = false});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -14,8 +15,14 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
-  bool _isB2BRegistration = false;
+  late bool _isB2BRegistration;
   bool _agreeToTerms = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isB2BRegistration = widget.isB2B;
+  }
 
   @override
   Widget build(BuildContext context) {
