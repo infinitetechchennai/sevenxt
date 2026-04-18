@@ -944,6 +944,61 @@ async def update_user_profile(
     finally:
         cursor.close()
         conn.close()
+
+@app.put("/users/me/b2b/documents")
+async def update_b2b_documents(
+    gst_certificate: UploadFile = File(None),
+    business_license: UploadFile = File(None),
+    current_user_id: str = Depends(get_current_user)
+):
+    """
+    Allow B2B users to re-upload their GST or PAN (business license) 
+    if they uploaded the wrong document during registration.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        # Check if user is an actual B2B applicant
+        cursor.execute("SELECT id FROM b2b_applications WHERE user_id = %s", (current_user_id,))
+        b2b_app = cursor.fetchone()
+        
+        if not b2b_app:
+            raise HTTPException(status_code=403, detail="You are not a registered B2B user")
+            
+        if not gst_certificate and not business_license:
+            raise HTTPException(status_code=400, detail="No documents provided for update")
+
+        updates = []
+        values = []
+
+        if gst_certificate:
+            gst_public_url = await upload_to_cloudinary(gst_certificate, folder="sevenxt/b2b/gst")
+            updates.append("gst_certificate_url = %s")
+            values.append(gst_public_url)
+            
+        if business_license:
+            license_public_url = await upload_to_cloudinary(business_license, folder="sevenxt/b2b/license")
+            updates.append("business_license_url = %s")
+            values.append(license_public_url)
+
+        if updates:
+            values.append(current_user_id)
+            query = f"UPDATE b2b_applications SET {', '.join(updates)} WHERE user_id = %s"
+            cursor.execute(query, values)
+            conn.commit()
+
+        return {"message": "B2B Documents updated successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        print("🔥 B2B DOC UPDATE ERROR:", repr(e))
+        raise HTTPException(status_code=500, detail="Failed to update documents")
+    finally:
+        cursor.close()
+        conn.close()
+
 # ============================ PRODUCT ENDPOINTS (View Only) ============================
 
 # Get all products with filtering
