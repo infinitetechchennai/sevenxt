@@ -362,8 +362,6 @@ async def login(form: UserLogin):
         b2b_app = cursor.fetchone()
         
         if b2b_app:
-            if b2b_app["status"] != "approved":
-                raise HTTPException(403, f"B2B account is {b2b_app['status']}. Please wait for approval.")
             user_type = "b2b"
         
         # Create token with user type
