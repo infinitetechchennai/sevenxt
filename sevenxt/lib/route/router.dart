@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sevenxt/entry_point.dart';
+import 'package:sevenxt/components/auth_wrapper.dart';
 import 'package:sevenxt/route/contact_service.dart';
 import 'package:sevenxt/route/guest_protect_route.dart';
 import 'package:sevenxt/route/privacy_service.dart';
@@ -30,7 +31,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case entryPointScreenRoute:
       final initialIndex = settings.arguments as int?;
       return MaterialPageRoute(
-        builder: (context) => EntryPoint(initialIndex: initialIndex ?? 0),
+        builder: (context) => AuthWrapper(
+          child: EntryPoint(initialIndex: initialIndex ?? 0),
+        ),
       );
     case logInScreenRoute:
       return MaterialPageRoute(builder: (context) => const LoginScreen());
