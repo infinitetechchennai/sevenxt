@@ -1778,7 +1778,18 @@ def normalize_state_for_gst(value: Optional[str]) -> str:
     return "".join(ch for ch in s if ch.isalnum())
 
 
-REGISTERED_STATES = {"tamilnadu"}
+REGISTERED_STATES = {
+    "tamilnadu", "karnataka", "maharashtra", "kerala", "andhrapradesh",
+    "telangana", "delhi", "uttarpradesh", "gujarat", "westbengal",
+    "rajasthan", "haryana", "punjab", "madhyapradesh", "bihar",
+    "odisha", "assam", "jammuandkashmir", "himachalpradesh",
+    "uttarakhand", "chandigarh", "sikkim", "goa", "puducherry",
+    "tripura", "meghalaya", "manipur", "nagaland", "mizoram",
+    "arunachalpradesh", "jharkhand", "chhattisgarh", "ladakh",
+    "bengaluru", "bangalore", "silkboard", "mumbai", "pune",
+    "hyderabad", "chennai", "kolkata", "ahmedabad", "gurugram",
+    "gurgaon", "noida"
+}
 
 
 def generate_internal_order_id(cursor) -> str:
@@ -1843,13 +1854,23 @@ def resolve_public_order_id(order_data: OrderCreate, cursor):
     return public_order_id, razorpay_order_id
 
 
+def is_state_registered(buyer_state: Optional[str]) -> bool:
+    if not buyer_state:
+        return True
+    s = str(buyer_state).strip().lower()
+    clean_s = "".join(ch for ch in s if ch.isalnum())
+    for reg in REGISTERED_STATES:
+        if reg in s or reg in clean_s:
+            return True
+    return False
+
+
 def compute_gst(total_amount: float, buyer_state: Optional[str]):
     """Compute GST based on buyer state (intra -> CGST/SGST, inter -> IGST)."""
     amount = float(total_amount or 0)
     subtotal = round(amount / 1.18, 2) if amount else 0.0
-    normalized_state = normalize_state_for_gst(buyer_state)
-    # Match legacy app behavior: if state missing, treat as intra-state (CGST/SGST).
-    is_intra_state = (not normalized_state) or (normalized_state in REGISTERED_STATES)
+    is_intra_state = is_state_registered(buyer_state)
+
 
     if is_intra_state:
         cgst_percentage = 9.0
