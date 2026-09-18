@@ -53,6 +53,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String? _verifiedPaymentMethod;
   String? _pendingOrderId;
   String? _razorpayOrderId;
+  String? _razorpayKey;
   String? _appliedCouponCode;
   double _couponDiscount = 0.0;
   bool _isApplyingCoupon = false;
@@ -448,8 +449,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _razorpayOrderId = razorpayData['razorpay_order_id'];
       _pendingOrderId =
           _razorpayOrderId; // Use this as the temporary order ID until confirmed
+      _razorpayKey = razorpayData['key']?.toString();
 
-      _startRazorpay();
+      _startRazorpay(_razorpayKey);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to initiate payment: $e')));
@@ -508,14 +510,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  void _startRazorpay() {
+  void _startRazorpay([String? key]) {
     final subtotal = _calculateSubtotal();
     final double totalGst = _displayTotalGstAmount ?? 0.0;
     final double totalAmount =
         subtotal + (_displayShippingFee ?? 0.0) + totalGst - _couponDiscount;
 
+    final String resolvedKey = (key != null && key.trim().isNotEmpty)
+        ? key.trim()
+        : ((_razorpayKey != null && _razorpayKey!.trim().isNotEmpty)
+            ? _razorpayKey!.trim()
+            : const String.fromEnvironment('RAZORPAY_KEY',
+                defaultValue: 'rzp_test_RsbvNk5QaP0H82'));
+
+    print("🚀 Opening Razorpay with order_id: $_razorpayOrderId, key: $resolvedKey");
+
     final options = {
-      'key': const String.fromEnvironment('RAZORPAY_KEY', defaultValue: ''),
+      'key': resolvedKey,
       'amount': (totalAmount * 100).toInt(),
       'currency': 'INR',
       'order_id': _razorpayOrderId,
