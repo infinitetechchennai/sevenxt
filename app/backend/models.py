@@ -21,13 +21,17 @@ class PhoneRequest(BaseModel):
     phone: str
 
 def normalize_phone(phone: str) -> str:
-    phone = phone.strip().replace(" ", "")
+    phone = phone.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
     if phone.startswith("+"):
         return phone
+    if phone.startswith("0") and len(phone) == 11:
+        return f"+91{phone[1:]}"
     if phone.startswith("91") and len(phone) == 12:
         return f"+{phone}"
     if len(phone) == 10:
         return f"+91{phone}"
+    if phone.isdigit():
+        return f"+{phone}"
     raise HTTPException(status_code=400, detail="Invalid phone number format")
 
 class VerifyOtpRequest(BaseModel):
