@@ -1029,7 +1029,7 @@ async def get_products(
                 b2c_offer_start_date, b2c_offer_end_date,sgst,
                 cgst,b2b_offer_start_date, b2b_offer_end_date,
                 compare_at_price ,info,
-                weight, length, breadth, return_policy,height,hsn
+                weight, length, breadth, NULL AS return_policy,height,hsn
                 -- rating, reviews REMOVED: These columns don't exist in products table
             FROM products WHERE 1=1
         """
@@ -1162,7 +1162,7 @@ async def search_products(
                 b2c_discount, b2b_discount,
                 b2c_offer_start_date, b2c_offer_end_date,sgst,
                 cgst,b2b_offer_start_date, b2b_offer_end_date,
-                weight, length, breadth, return_policy,height,hsn,
+                weight, length, breadth, NULL AS return_policy,height,hsn,
                 compare_at_price,
                 info
             FROM products 
@@ -1240,7 +1240,7 @@ async def get_product(product_id: str, user_type: Optional[str] = None):
                 b2c_offer_price, b2b_offer_price,
                 b2c_discount, b2b_discount,
                 b2c_offer_start_date, b2c_offer_end_date,sgst,
-                cgst,weight, length, breadth, return_policy,height,
+                cgst,weight, length, breadth, NULL AS return_policy,height,
                 b2b_offer_start_date, b2b_offer_end_date,
                 hsn,
                 compare_at_price,info
