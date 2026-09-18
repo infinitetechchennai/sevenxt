@@ -1913,68 +1913,93 @@ async def place_order_from_app(order_data: OrderCreate, current_user_id: str = D
                 total_breadth += getattr(product, "breadthCm", 0)
                 original_price += product.price  * product.quantity 
 
-        # 1. Insert order with dimensions and HSN in separate columns
-        cursor.execute("""
-        INSERT INTO orders (
-            order_id, customer, email, phone, amount, shipping_fee,
-            state_gst_amount, central_gst_amount, sgst_percentage, cgst_percentage, igst_percentage,
-            items_count, customer_type, status, payment, payment_method, products,
-            created_at, address, hsn, weight, height, length, breadth, city, state, pincode, original_price,customer_name,
-            razorpay_order_id
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id
-        """, (
-            public_order_id,
-            current_user_id,
-            order_data.customer_email,
-            order_data.phone,
-            order_data.total_price,
-            order_data.shipping_fee,
-            gst_breakdown["state_gst_amount"],
-            gst_breakdown["central_gst_amount"],
-            gst_breakdown["sgst_percentage"],
-            gst_breakdown["cgst_percentage"],
-            gst_breakdown["igst_percentage"],
-            len(order_data.products),
-            actual_customer_type,
-            actual_order_status,
-            order_data.payment_status,
-            order_data.payment_method,
-            '[]',  # Empty array initially
-            datetime.strptime(order_data.placed_on, '%d/%m/%Y').strftime('%Y-%m-%d %H:%M:%S'),
-            order_data.customer_address_text,
-            hsn_code,
-            total_weight,
-            total_height,
-            total_length,
-            total_breadth,
-            order_data.city,
-            order_data.state,
-            order_data.pincode,
-            original_price,
-            order_data.customer_name,
-            razorpay_order_id
-        ))
+        # 1. Inspect existing columns in 'orders' table to insert only valid columns
+        cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'orders'")
+        existing_order_cols = {row[0] for row in cursor.fetchall()}
+
+        candidate_order_fields = {
+            "order_id": public_order_id,
+            "customer_name": order_data.customer_name,
+            "customer_type": actual_customer_type,
+            "email": order_data.customer_email,
+            "phone": order_data.phone,
+            "amount": order_data.total_price,
+            "status": actual_order_status,
+            "payment": order_data.payment_status,
+            "payment_method": order_data.payment_method,
+            "products": '[]',
+            "created_at": datetime.strptime(order_data.placed_on, '%d/%m/%Y').strftime('%Y-%m-%d %H:%M:%S'),
+            "address": order_data.customer_address_text,
+            "city": order_data.city,
+            "state": order_data.state,
+            "pincode": order_data.pincode,
+            "hsn": hsn_code,
+            "weight": total_weight,
+            "height": total_height,
+            "length": total_length,
+            "breadth": total_breadth,
+            "original_price": original_price,
+            "shipping_fee": order_data.shipping_fee,
+            "state_gst_amount": gst_breakdown["state_gst_amount"],
+            "central_gst_amount": gst_breakdown["central_gst_amount"],
+            "sgst_percentage": gst_breakdown["sgst_percentage"],
+            "cgst_percentage": gst_breakdown["cgst_percentage"],
+            "igst_percentage": gst_breakdown["igst_percentage"],
+            "items_count": len(order_data.products),
+            "razorpay_order_id": razorpay_order_id,
+            "customer": current_user_id,
+            "user_id": current_user_id,
+        }
+
+        valid_order_fields = {k: v for k, v in candidate_order_fields.items() if k in existing_order_cols}
+        cols_str = ", ".join(valid_order_fields.keys())
+        placeholders_str = ", ".join(["%s"] * len(valid_order_fields))
+        values = list(valid_order_fields.values())
+
+        cursor.execute(f"""
+            INSERT INTO orders ({cols_str})
+            VALUES ({placeholders_str})
+            RETURNING id
+        """, values)
         
         db_order_id = cursor.fetchone()[0]
 
-        # 2. Insert each product (without dimensions in product JSON if not needed)
+        # 2. Ensure order_items table exists
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS order_items (
+                id SERIAL PRIMARY KEY,
+                order_id VARCHAR(50),
+                product_name VARCHAR(255),
+                image TEXT,
+                unit_price NUMERIC(10, 2),
+                quantity INT DEFAULT 1,
+                item_total NUMERIC(10, 2),
+                status VARCHAR(50) DEFAULT 'Pending',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+        """)
+
+        cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'order_items'")
+        order_items_cols = {r[0] for r in cursor.fetchall()}
+
+        # 3. Insert each product
         for product in order_data.products:
-            cursor.execute("""
-            INSERT INTO order_items (
-                order_id, product_name, image, unit_price, quantity, item_total
-            ) VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id
-            """, (
-                public_order_id,
-                product.name,
-                product.imageUrl,
-                product.price,
-                product.quantity,
-                product.price * product.quantity
-            ))
-            
-            product.order_item_id = cursor.fetchone()[0]
+            item_fields = {
+                "order_id": public_order_id,
+                "product_name": product.name,
+                "image": product.imageUrl,
+                "unit_price": product.price,
+                "quantity": product.quantity,
+                "item_total": product.price * product.quantity,
+            }
+            valid_item_fields = {k: v for k, v in item_fields.items() if k in order_items_cols}
+            if valid_item_fields:
+                cols = ", ".join(valid_item_fields.keys())
+                placeholders = ", ".join(["%s"] * len(valid_item_fields))
+                cursor.execute(f"INSERT INTO order_items ({cols}) VALUES ({placeholders}) RETURNING id", list(valid_item_fields.values()))
+                product.order_item_id = cursor.fetchone()[0]
+            else:
+                product.order_item_id = 0
 
             created_order_items.append({ 
                 "order_item_id": product.order_item_id,
