@@ -2937,12 +2937,13 @@ async def create_payment_for_order(
             "payment_capture": 1
         })
 
+        print(f"💳 [RAZORPAY ORDER CREATED] id={razorpay_order['id']}, amount={razorpay_order['amount']}")
         return {
             "success": True,
             "razorpay_order_id": razorpay_order["id"],
             "amount": razorpay_order["amount"],
             "currency": razorpay_order["currency"],
-            "key": RAZORPAY_KEY_ID
+            "key": RAZORPAY_KEY_ID or "rzp_test_RsbvNk5QaP0H82"
         }
 
     except Exception as e:
