@@ -596,8 +596,60 @@ async def register_b2b(
 
 # ============================ ADDRESS CRUD ============================
 
+def ensure_address_tables(conn=None):
+    """Ensure addresses and user_addresses tables exist in the database."""
+    should_close = False
+    if conn is None:
+        try:
+            conn = get_db_connection()
+            should_close = True
+        except Exception as e:
+            print(f"[DB] Could not connect to ensure tables: {e}")
+            return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS addresses (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID,
+                    address TEXT NOT NULL,
+                    city VARCHAR(100),
+                    state VARCHAR(100),
+                    pincode VARCHAR(20),
+                    country VARCHAR(100) DEFAULT 'India',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS user_addresses (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID,
+                    address_id UUID REFERENCES addresses(id) ON DELETE CASCADE,
+                    name VARCHAR(100) DEFAULT 'Home',
+                    is_default BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_user_addresses_user_id ON user_addresses(user_id);
+                CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id);
+            """)
+            conn.commit()
+    except Exception as e:
+        print(f"[DB] Error ensuring address tables: {e}")
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+    finally:
+        if should_close and conn:
+            conn.close()
+
+@app.on_event("startup")
+def on_app_startup():
+    ensure_address_tables()
+
 @app.post("/users/addresses")
 async def create_address(address: AddressCreate, current_user_id: str = Depends(get_current_user)):
+    ensure_address_tables()
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -671,6 +723,11 @@ async def list_addresses(current_user_id: str = Depends(get_current_user)):
             WHERE ua.user_id = %s ORDER BY ua.created_at DESC
         """, (current_user_id,))
         return {"data": cursor.fetchall()}
+    except Exception as e:
+        print(f"[list_addresses] Table missing or error: {e}")
+        conn.rollback()
+        ensure_address_tables(conn)
+        return {"data": []}
     finally:
         cursor.close()
         conn.close()
