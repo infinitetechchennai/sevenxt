@@ -2415,7 +2415,7 @@ async def create_refund(
         # === Get user ===
         print(f"DEBUG: Fetching user with ID: {current_user}")
         cursor.execute(
-            "SELECT email, full_name FROM auth_users WHERE id = %s",
+            "SELECT email, full_name, phone_number FROM auth_users WHERE id = %s",
             (current_user,)
         )
         user = cursor.fetchone()
@@ -2423,8 +2423,10 @@ async def create_refund(
             print(f"DEBUG: User not found for ID: {current_user}")
             raise HTTPException(404, "User not found")
 
-        email, customer_name = user
-        print(f"DEBUG: User email: {email}, name: {customer_name}")
+        email = user[0]
+        customer_name = user[1]
+        phone = user[2] if len(user) > 2 else None
+        print(f"DEBUG: User email: {email}, name: {customer_name}, phone: {phone}")
 
         # === Debug: Check database structure ===
         print(f"DEBUG: Checking database for order_item_id={order_item_id}")
@@ -2436,7 +2438,7 @@ async def create_refund(
                 oi.product_name,
                 oi.unit_price,
                 o.order_id as o_order_id,
-                o.customer as o_customer,
+                o.customer_name as o_customer_name,
                 o.email as o_email
             FROM order_items oi
             LEFT JOIN orders o ON o.order_id = oi.order_id
@@ -2456,7 +2458,7 @@ async def create_refund(
         # === Validate ownership ===
         print(f"DEBUG: Validating order item {order_item_id} for user {current_user}")
         
-        # Correct query based on your schema
+        # Correct query based on your schema (match by email or phone)
         cursor.execute("""
             SELECT 
                 oi.order_id as  business_order_id,
@@ -2465,8 +2467,8 @@ async def create_refund(
                 oi.unit_price
             FROM order_items oi
             JOIN orders o ON o.order_id = oi.order_id
-            WHERE oi.id = %s AND o.customer = %s
-        """, (order_item_id, current_user))
+            WHERE oi.id = %s AND (o.email = %s OR (o.phone IS NOT NULL AND %s IS NOT NULL AND o.phone = %s))
+        """, (order_item_id, email, phone, phone))
 
         row = cursor.fetchone()
         if not row:
@@ -2608,27 +2610,26 @@ async def create_exchange(
 
         # === User ===
         cursor.execute(
-            "SELECT email FROM auth_users WHERE id=%s",
+            "SELECT email, phone_number FROM auth_users WHERE id=%s",
             (current_user,)
         )
         user = cursor.fetchone()
         if not user:
             raise HTTPException(404, "User not found")
         email = user[0]
+        phone = user[1] if len(user) > 1 else None
 
         # === Ownership ===
-        # FIXED: Changed to check by customer UUID
         cursor.execute("""
             SELECT 
-         oi.order_id,
-         oi.quantity,
-         oi.product_name,
-         oi.unit_price
-         FROM order_items oi
-        JOIN orders o ON o.order_id = oi.order_id
-        WHERE oi.id = %s AND o.customer = %s
-
-        """, (order_item_id, current_user))
+                oi.order_id,
+                oi.quantity,
+                oi.product_name,
+                oi.unit_price
+            FROM order_items oi
+            JOIN orders o ON o.order_id = oi.order_id
+            WHERE oi.id = %s AND (o.email = %s OR (o.phone IS NOT NULL AND %s IS NOT NULL AND o.phone = %s))
+        """, (order_item_id, email, phone, phone))
 
         row = cursor.fetchone()
         if not row:
