@@ -1592,36 +1592,45 @@ def check_pincode_serviceability(pincode: str):
     params = {"filter_codes": pincode}
     headers = {"Authorization": f"Token {DELHIVERY_TOKEN}"}
 
-    res = requests.get(url, params=params, headers=headers, timeout=5)
+    try:
+        res = requests.get(url, params=params, headers=headers, timeout=8)
 
-    if res.status_code != 200:
+        if res.status_code != 200:
+            print(f"⚠️ Delhivery pincode check returned status {res.status_code}, falling back to serviceable")
+            return {
+                "serviceable": True,
+                "reason": "Serviceable"
+            }
+
+        data = res.json()
+        pincodes = data.get("delivery_codes", [])
+
+        if not pincodes:
+            return {
+                "serviceable": False,
+                "reason": "NSZ (Non-serviceable pincode)"
+            }
+
+        pincode_info = pincodes[0].get("postal_code", {})
+        remark = pincode_info.get("remarks", "")
+
+        if remark.lower() == "embargo":
+            return {
+                "serviceable": False,
+                "reason": "Temporarily unavailable (Embargo)"
+            }
+
         return {
-            "serviceable": False,
-            "reason": "Serviceability check failed"
+            "serviceable": True,
+            "reason": "Serviceable"
+        }
+    except Exception as e:
+        print(f"⚠️ [DELHIVERY PINCODE TIMEOUT/ERROR] {e} - Falling back to serviceable")
+        return {
+            "serviceable": True,
+            "reason": "Serviceable"
         }
 
-    data = res.json()
-    pincodes = data.get("delivery_codes", [])
-
-    if not pincodes:
-        return {
-            "serviceable": False,
-            "reason": "NSZ (Non-serviceable pincode)"
-        }
-
-    pincode_info = pincodes[0].get("postal_code", {})
-    remark = pincode_info.get("remarks", "")
-
-    if remark.lower() == "embargo":
-        return {
-            "serviceable": False,
-            "reason": "Temporarily unavailable (Embargo)"
-        }
-
-    return {
-        "serviceable": True,
-        "reason": "Serviceable"
-    }
         
 
 # ============================ SHIPPING ESTIMATION (DELHIVERY) ============================
@@ -1728,9 +1737,10 @@ async def calculate_shipping(payload: dict):
         
         if res.status_code != 200:
             print(f"Delhivery API Error ({res.status_code}): {res.text}")
-            shipping_fee = calculate_mock_shipping(chargeable_weight)
+            shipping_fee = calculate_mock_shipping(chargeable_weight, zone)
             pricing_source = "mock"
             data = {"error": "API Error", "details": res.text}
+
         else:
             data = res.json()
             # Extract fee from list response
