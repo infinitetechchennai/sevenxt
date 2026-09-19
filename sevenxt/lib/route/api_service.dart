@@ -990,9 +990,14 @@ class ApiService {
 
   // Inside your ApiService class
   static Future<Map<String, String>> getCategoryImages() async {
+    final Map<String, String> headers = {};
+    if (token != null && token!.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
     final response = await http.get(
       Uri.parse('$baseUrl/category-banners'), // adjust your endpoint
-      headers: {'Authorization': 'Bearer $token'},
+      headers: headers,
     );
 
     print('Category banners response: ${response.statusCode}');
@@ -1000,13 +1005,17 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
-      if (json['success'] == true) {
+      if (json['success'] == true && json['data'] is List) {
         final List data = json['data'];
         final Map<String, String> map = {};
         for (var item in data) {
-          final category = item['category'] as String;
-          final imageUrl = item['image_url'] as String;
-          map[category] = imageUrl;
+          if (item is Map) {
+            final category = item['category']?.toString();
+            final imageUrl = item['image_url']?.toString();
+            if (category != null && imageUrl != null && imageUrl.isNotEmpty) {
+              map[category] = imageUrl;
+            }
+          }
         }
         return map;
       }
@@ -1016,12 +1025,16 @@ class ApiService {
   }
 
   static Future<List<Map<String, dynamic>>> getHeroBanners() async {
+    final Map<String, String> headers = {
+      'Content-Type': 'application/json',
+    };
+    if (token != null && token!.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
     final response = await http.get(
       Uri.parse('$baseUrl/hero-banners'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
     );
 
     print('Hero banners response: ${response.statusCode}');

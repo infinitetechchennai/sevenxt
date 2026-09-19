@@ -3198,9 +3198,7 @@ async def get_available_coupons(
         cursor.close()
         conn.close()
 @app.get("/category-banners")
-async def get_category_banners(
-    user_id: str = Depends(get_current_user)
-):
+async def get_category_banners():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -3218,12 +3216,23 @@ async def get_category_banners(
 
         banners = cursor.fetchall()
 
+        CATEGORY_FALLBACK = {
+            1: "All Gadgets",
+            2: "Mobile & Devices",
+            3: "Laptops & PCs",
+            4: "Cameras & Photography",
+            5: "Wearables",
+            6: "TV & Entertainment",
+            7: "Networking",
+            8: "Peripherals",
+        }
+
         return {
             "success": True,
             "data": [
                 {
                     "id": b["id"],
-                    "category": b["category"],
+                    "category": b["category"] or CATEGORY_FALLBACK.get(b["id"], f"Category {b['id']}"),
                     "image_url": b["image_url"]
                 }
                 for b in banners
@@ -3238,9 +3247,7 @@ async def get_category_banners(
         cursor.close()
         conn.close()        
 @app.get("/hero-banners")
-async def get_hero_banners(
-    user_id: str = Depends(get_current_user)
-):
+async def get_hero_banners():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 

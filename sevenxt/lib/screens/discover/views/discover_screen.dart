@@ -79,26 +79,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     return const DiscoverCategoriesSkelton();
                   }
 
-                  // Error State
-                  if (imagesProvider.error != null) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error, color: Colors.red, size: 48),
-                          const SizedBox(height: 16),
-                          const Text("Failed to load category images"),
-                          TextButton(
-                            onPressed: () =>
-                                imagesProvider.fetchCategoryImages(),
-                            child: const Text("Retry"),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  // Success: Show Categories
+                  // Show Categories (uses dynamic banner if available, otherwise static fallback)
                   return ListView.builder(
                     itemCount: demoCategories.length,
                     itemBuilder: (context, index) {
