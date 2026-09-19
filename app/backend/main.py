@@ -884,8 +884,13 @@ async def delete_user(current_user_id: str = Depends(get_current_user)):
         cursor.execute("DELETE FROM product_reviews WHERE user_id = %s", (current_user_id,))
             
         # 3️⃣ Delete orders & order items
-        cursor.execute("SELECT id FROM orders WHERE customer = %s", (current_user_id,))
-        order_ids = [row for row in cursor.fetchall()]
+        cursor.execute("SELECT email, phone_number FROM auth_users WHERE id = %s", (current_user_id,))
+        user_info = cursor.fetchone()
+        order_ids = []
+        if user_info:
+            u_email, u_phone = user_info[0], user_info[1]
+            cursor.execute("SELECT id FROM orders WHERE email = %s OR phone = %s", (u_email, u_phone))
+            order_ids = [row[0] for row in cursor.fetchall()]
         if order_ids:
             cursor.execute(
                 "DELETE FROM order_items WHERE order_id = ANY(%s)", (order_ids,)
@@ -2264,19 +2269,38 @@ async def cancel_order(
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
-        # 1. Fetch the order and verify ownership
+        # 1. Fetch user to verify ownership
+        cursor.execute("SELECT id, email, phone_number FROM auth_users WHERE id = %s", (current_user_id,))
+        auth_user = cursor.fetchone()
+        user_email = (auth_user["email"] or "").strip().lower() if auth_user else ""
+        user_phone = (auth_user["phone_number"] or "").strip() if auth_user else ""
+
+        # Fetch the order
         cursor.execute("""
-            SELECT id, status, products, customer 
+            SELECT id, status, products, email, phone 
             FROM orders 
-            WHERE order_id = %s AND customer = %s
-        """, (order_id, current_user_id))
+            WHERE order_id = %s
+        """, (order_id,))
         order = cursor.fetchone()
         
         if not order:
-            raise HTTPException(status_code=404, detail="Order not found or not owned by user")
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        # Verify ownership
+        order_email = (order.get("email") or "").strip().lower()
+        order_phone = (order.get("phone") or "").strip()
+
+        is_owner = False
+        if user_email and order_email and user_email == order_email:
+            is_owner = True
+        elif user_phone and order_phone and (user_phone in order_phone or order_phone in user_phone):
+            is_owner = True
+
+        if not is_owner:
+            raise HTTPException(status_code=403, detail="Order not owned by user")
         
         # 2. Check if already cancelled or already in a state that cannot be cancelled
-        current_status = order["status"].lower()
+        current_status = (order["status"] or "").lower()
         if current_status == "cancelled":
              raise HTTPException(status_code=400, detail="Order is already cancelled")
              
