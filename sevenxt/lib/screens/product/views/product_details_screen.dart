@@ -94,6 +94,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       setState(() {
         _fullProduct = product;
         _isLoadingProduct = false;
+        if (_selectedColorIndex < 0 && product.colors.isNotEmpty) {
+          _selectedColorIndex = 0;
+        }
+
       });
     } catch (e) {
       debugPrint("❌ Failed to load product details: $e");
@@ -123,10 +127,20 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     });
   }
 
-  void _addToCart() {
-    if (_fullProduct == null || _selectedColorIndex < 0) return;
+  String _getSelectedColorName() {
+    if (_fullProduct != null &&
+        _fullProduct!.colors.isNotEmpty &&
+        _selectedColorIndex >= 0 &&
+        _selectedColorIndex < _fullProduct!.colors.length) {
+      return _fullProduct!.colors[_selectedColorIndex];
+    }
+    return "Default";
+  }
 
-    final String selectedColorName = _fullProduct!.colors[_selectedColorIndex];
+  void _addToCart() {
+    if (_fullProduct == null) return;
+
+    final String selectedColorName = _getSelectedColorName();
 
     Cart().addItem(
       _fullProduct!,
@@ -147,9 +161,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   void _buyNow() {
-    if (_fullProduct == null || _selectedColorIndex < 0) return;
+    if (_fullProduct == null) return;
 
-    final String selectedColorName = _fullProduct!.colors[_selectedColorIndex];
+    final String selectedColorName = _getSelectedColorName();
 
     Cart().addItem(
       _fullProduct!,
@@ -166,6 +180,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       'userType': _resolvedUserType, // ✅ PASS IT
     });
   }
+
 
   Map<String, int> _calculateReviewStats() {
     int fiveStar = 0, fourStar = 0, threeStar = 0, twoStar = 0, oneStar = 0;

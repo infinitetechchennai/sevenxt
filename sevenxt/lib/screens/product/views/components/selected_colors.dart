@@ -18,7 +18,11 @@ class SelectedColors extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (colors.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Column(
+
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
