@@ -1155,8 +1155,8 @@ async def get_products(
             product["reviews"] = review_stats["review_count"] if review_stats else 0
             product["rating"] = round(review_stats["avg_rating"], 2) if review_stats and review_stats["avg_rating"] else 0
             
-            # Calculate current price based on user type and active offers
-            current_time = datetime.now()
+            # Calculate current price based on user type and active offers (IST: UTC + 5:30)
+            current_time = datetime.utcnow() + timedelta(hours=5, minutes=30)
             normalize_product_dates(product)
             
             if user_type == "b2c":
@@ -1249,8 +1249,8 @@ async def search_products(
         cursor.execute(sql_query, (search_term, limit))
         products = cursor.fetchall()
         
-        # Get review counts and format prices
-        current_time = datetime.now()
+        # Get review counts and format prices (IST: UTC + 5:30)
+        current_time = datetime.utcnow() + timedelta(hours=5, minutes=30)
         for product in products:
             cursor.execute("""
                 SELECT 
@@ -1338,8 +1338,8 @@ async def get_product(product_id: str, user_type: Optional[str] = None):
         product["reviews"] = review_stats["review_count"] if review_stats else 0
         product["rating"] = round(review_stats["avg_rating"], 2) if review_stats and review_stats["avg_rating"] else 0
         
-        # Format response based on user_type
-        current_time = datetime.now()
+        # Format response based on user_type (IST: UTC + 5:30)
+        current_time = datetime.utcnow() + timedelta(hours=5, minutes=30)
         normalize_product_dates(product)
         
         if user_type == "b2c":
